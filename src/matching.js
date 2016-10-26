@@ -63,19 +63,15 @@ class MatchingServer {
 		}
 	}
 
-	onIdMobile(socket) {
+	onIdMobile(socket,data) {
 
 		logger.debug(`Mobile is connected: ${socket.id}`);
 
-		this.clients[socket.id] = socket;
-
-		// if (this.whisperers[socket.id]) {
-		// 	logger.debug("sent to browser: ", this.whisperers[socket.id].id);
-		// 	socket.emit("goaway");
-		// 	this.whisperers[socket.id].socket.emit('mobileIsOk', sio_message);
-		// }
-		// else
-		// 	logger.debug("!!!failed to retrieve browser socket!!!");
+		this.clients[socket.id] = {
+			id:     socket.id,
+			socket: socket,
+			clientId:data.id
+		};
 
 	}
 
@@ -92,23 +88,33 @@ class MatchingServer {
 			logger.debug(`Found record is null`);
 			return;
 		}
-		logger.debug(`Found record `, foundRecord);
+		logger.debug(`Found record `, {
+			browseSocketId: foundRecord.browseSocketId,
+			whispererFqdn:  foundRecord.whispererFqdn
+		});
 		socket.removeAllListeners("pincodeHeard");
 
 		process.nextTick(()=> {
 
-			this.clients[socket.id].emit('start-session', {
-				browseSocketId: foundRecord.browseSocketId,
-				whispererFqdn:  foundRecord.whispererFqdn
-			});
+			try {
 
-			if(foundRecord.socket){
 				foundRecord.socket.emit('mobile_matched', {
 					browseSocketId: foundRecord.browseSocketId
-				})
-			}
+				});
 
-			this.map.removeSocketData(foundRecord.browseSocketId, true);
+				this.clients[socket.id].socket.emit('start-session', {
+					browseSocketId: foundRecord.browseSocketId,
+					whispererFqdn:  foundRecord.whispererFqdn
+				});
+
+				this.clients[socket.id].socket.disconnect();
+
+				delete this.clients[socket.id];
+
+				this.map.removeSocketData(foundRecord.browseSocketId, true);
+			} catch (e) {
+				logger.error(e);
+			}
 		});
 
 
