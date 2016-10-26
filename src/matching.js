@@ -63,14 +63,14 @@ class MatchingServer {
 		}
 	}
 
-	onIdMobile(socket,data) {
+	onIdMobile(socket, data) {
 
 		logger.debug(`Mobile is connected: ${socket.id}`);
 
 		this.clients[socket.id] = {
-			id:     socket.id,
-			socket: socket,
-			clientId:data.id
+			id:         socket.id,
+			socket:     socket,
+			clientFqdn: data.fqdn
 		};
 
 	}
@@ -99,7 +99,8 @@ class MatchingServer {
 			try {
 
 				foundRecord.socket.emit('mobile_matched', {
-					browseSocketId: foundRecord.browseSocketId
+					browseSocketId: foundRecord.browseSocketId,
+					clientFqdn:     this.clients[socket.id].clientFqdn
 				});
 
 				this.clients[socket.id].socket.emit('start-session', {
@@ -116,8 +117,6 @@ class MatchingServer {
 				logger.error(e);
 			}
 		});
-
-
 
 
 	}
