@@ -5,17 +5,21 @@
 const beameSDK    = require('beame-sdk');
 const module_name = "Matching";
 const BeameLogger = beameSDK.Logger;
+const CommonUtils = beameSDK.CommonUtils;
 const logger      = new BeameLogger(module_name);
+const store       = new (beameSDK.BeameStore)();
 
 const CodeMap = require('./code_map');
 
 
 class MatchingServer {
 
-	constructor() {
+	constructor(server_fqdn) {
 		this.map        = new CodeMap();
 		this.whisperers = {};
 		this.clients    = {};
+		this.fqdn       = server_fqdn;
+		this.creds      = store.getCredential(this.fqdn);
 	}
 
 	onWhispererConnection(socket) {
@@ -82,15 +86,18 @@ class MatchingServer {
 		};
 	}
 
-	createDevicePair(foundRecord, socket) {
+	/**
+	 *
+	 * @param {PincodeToken} pincodeObj
+	 * @param {Object} socket
+	 * @param {String|null} [signature]
+	 */
+	createDevicePair(pincodeObj, socket, signature) {
 
-		if (!foundRecord) {
-			logger.debug(`Found record is null`);
-			return;
-		}
+
 		logger.debug(`Found record `, {
-			browseSocketId: foundRecord.browseSocketId,
-			whispererFqdn:  foundRecord.whispererFqdn
+			sessionId:     pincodeObj.sessionId,
+			whispererFqdn: pincodeObj.whispererFqdn
 		});
 		socket.removeAllListeners("pincodeHeard");
 
@@ -98,21 +105,27 @@ class MatchingServer {
 
 			try {
 
-				foundRecord.socket.emit('mobile_matched', {
-					browseSocketId: foundRecord.browseSocketId,
-					clientFqdn:     this.clients[socket.id].clientFqdn
+				//send message to Whisperer
+				pincodeObj.socket.emit('mobile_matched', {
+					sessionId:  pincodeObj.sessionId,
+					clientFqdn: this.clients[socket.id].clientFqdn,
+					signature:  signature
 				});
 
+				//send message to Mobile
 				this.clients[socket.id].socket.emit('start-session', {
-					browseSocketId: foundRecord.browseSocketId,
-					whispererFqdn:  foundRecord.whispererFqdn
+					sessionId:     pincodeObj.sessionId,
+					whispererFqdn: pincodeObj.whispererFqdn
 				});
 
+				//close socket with mobile
 				this.clients[socket.id].socket.disconnect();
 
 				delete this.clients[socket.id];
 
-				this.map.removeSocketData(foundRecord.browseSocketId, true);
+				//clean pincodes
+				this.map.removeSocketData(pincodeObj.sessionId, true);
+
 			} catch (e) {
 				logger.error(e);
 			}
@@ -127,10 +140,58 @@ class MatchingServer {
 	 * @param {Object} message
 	 */
 	onCodeHeard(socket, message) {
-		let pincode = JSON.parse("[" + message.pin + "]");
-		logger.debug(`onCodeHeard  ${message.pin} on socketId ${socket.id}`);
-		let foundRecord = this.map.matchPinCode(pincode);
-		this.createDevicePair(foundRecord, socket);
+		let pincode = null;
+
+		logger.debug(`code received from mobile`,message);
+
+		function _onPinFound(signature) {
+			try {
+				if (!pincode) {
+					logger.error(`Pin not found `);
+					return;
+				}
+
+				logger.debug(`onCodeHeard  ${pincode} on socketId ${socket.id}`);
+				let pincodeObj = this.map.matchPinCode(pincode);
+
+				if (!pincodeObj) {
+					logger.debug(`Pincode not found`);
+					return;
+				}
+
+				this.createDevicePair(pincodeObj, socket, signature);
+			} catch (e) {
+				logger.error(e);
+			}
+		}
+
+		if (message.pin) {
+			pincode = JSON.parse("[" + message.pin + "]");
+			_onPinFound();
+		}
+		else if (message.sign) {
+
+			let signature = CommonUtils.parse(message.sign);
+
+			store.find(signature.signedBy).then(creds=> {
+				if (!creds.checkSignature(signature)) {
+					logger.error(`Client Signature by ${signature.signedBy} not valid`);
+					return;
+				}
+
+				if (!signature.signedData["pin"]) {
+					logger.error(`Pin not found in signature`, signature);
+					return;
+				}
+
+				pincode = JSON.parse("[" + signature.signedData["pin"] + "]");
+
+				_onPinFound.call(this, CommonUtils.stringify(signature));
+
+			}).catch(()=> {
+
+			});
+		}
 	}
 }
 

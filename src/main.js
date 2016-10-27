@@ -16,7 +16,7 @@ const beameSDK    = require('beame-sdk');
 const module_name = "MatchingServer";
 const BeameLogger = beameSDK.Logger;
 const logger      = new BeameLogger(module_name);
-const matching = new(require('./matching'))();
+const matching = new(require('./matching'))(config.MatchingServerFqdn);
 
 
 /**

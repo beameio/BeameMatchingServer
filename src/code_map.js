@@ -3,6 +3,15 @@
  */
 "use strict";
 
+/**
+ * @typedef {Object} PincodeToken
+ * @property {String} socketId
+ * @property {Object} socket
+ * @property {String} sessionId
+ * @property {String} whispererFqdn
+ * @property {Array.<number>} pincode
+ */
+
 const _               = require('underscore');
 const maxFifoPinCodes = 3;
 const beameSDK        = require('beame-sdk');
@@ -30,7 +39,7 @@ class CodeMap {
 
 	addPinCode(message, socket) {
 
-		let key = message.browseSocketId; //socket.id
+		let key = message.sessionId; //socket.id
 
 		if (!this.pincodes[key]) {
 			logger.debug('************************creating fifo');
@@ -39,7 +48,7 @@ class CodeMap {
 		else {
 			logger.debug("Queue length " + this.pincodes[key].length);
 			while (this.pincodes[key].length > maxFifoPinCodes) {
-				var item = this.pincodes[key].node;
+				let item = this.pincodes[key].node;
 				this.pincodes[key].remove(item);
 				logger.debug(`removing item ${this.pincodes[key].length}`);
 			}
@@ -49,13 +58,16 @@ class CodeMap {
 		this.pincodes[key].push({
 			socketId:       socket.id,
 			socket:         socket,
-			browseSocketId: message.browseSocketId,
+			sessionId:      message.sessionId,
 			pincode:        message.pin,
 			whispererFqdn:  message.whispererFqdn
 		});
 	}
 
-//noinspection JSUnusedGlobalSymbols
+	/**
+	 * @param pincode
+	 * @returns {PincodeToken}
+	 */
 	matchPinCode(pincode) {
 		var keys = _.keys(this.pincodes);
 
