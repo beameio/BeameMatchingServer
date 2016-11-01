@@ -40,6 +40,7 @@ class WhispererAgent {
 
 	disconnect() {
 		logger.debug(`[${this.sessionId }] Disconnecting from socket ${this.socketId}`);
+		this.map.removeSocketData(this.sessionId, true);
 		//noinspection JSUnfilteredForInLoop
 		this.socketId  = null;
 		this.socket    = null;
@@ -47,6 +48,7 @@ class WhispererAgent {
 		this.timeout   = null;
 		this._clearTimer();
 		this.timer = null;
+
 	}
 
 	_clearTimer() {

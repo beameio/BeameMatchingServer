@@ -59,7 +59,7 @@ class CodeMap {
 			socketId:       socket.id,
 			socket:         socket,
 			sessionId:      message.sessionId,
-			pincode:        message.pin,
+			pincode:        message.pincode,
 			whispererFqdn:  message.whispererFqdn
 		});
 	}
