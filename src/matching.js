@@ -110,13 +110,13 @@ class MatchingServer {
 	onCreateSession(socket, data) {
 		try {
 
-			logger.debug(`session ${data.sessionId} creating for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
+			logger.debug(`[${data.sessionId}] create session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
 
 			let agent = new WhispererAgent(socket, this.map, data);
 
 			this._whisperers[data.whispererFqdn].sessions[data.sessionId] = agent;
 
-			logger.debug(`sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
+			logger.debug(`[${data.sessionId}] sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
 
 			agent.sendPin(data);
 		}
@@ -132,7 +132,7 @@ class MatchingServer {
 	 */
 	onStopPlay(socket,data) {
 
-		logger.debug(`stop play received from socket ${socket.id} on session ${data.sessionId}`);
+		logger.debug(`[${data.sessionId}] stop play received from socket ${socket.id} `);
 
 		let agent = this._whisperers[data.whispererFqdn].sessions[data.sessionId];
 
@@ -157,15 +157,17 @@ class MatchingServer {
 				//noinspection JSUnfilteredForInLoop
 				if (this._whisperers[key].sessions[id].socketId == socket.id) {
 					//noinspection JSUnfilteredForInLoop
+					logger.debug(`[${this._whisperers[key].sessions[id].sessionId}] disconnecting`);
+					//noinspection JSUnfilteredForInLoop
 					this._whisperers[key].sessions[id].disconnect();
 					//noinspection JSUnfilteredForInLoop
 					delete this._whisperers[key].sessions[id];
 					return;
 				}
 			}
-
-
 		}
+
+		logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
 	}
 
 	onIdMobile(socket, data) {

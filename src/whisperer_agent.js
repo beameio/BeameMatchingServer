@@ -39,6 +39,7 @@ class WhispererAgent {
 	}
 
 	disconnect() {
+		logger.debug(`[${this.sessionId }] Disconnecting from socket ${this.socketId}`);
 		//noinspection JSUnfilteredForInLoop
 		this.socketId  = null;
 		this.socket    = null;
@@ -71,7 +72,7 @@ class WhispererAgent {
 
 		this.codeMap.addPinCode(pinData, this.socket);
 
-		logger.debug(`sending pincodes to socket ${this.socket.id}`, pin);
+		logger.debug(`[${this.sessionId }] sending pincodes to socket ${this.socket.id} pin ${pin}`);
 
 		this.socket.emit('new_pin', pin);
 

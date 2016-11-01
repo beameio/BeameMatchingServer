@@ -27,7 +27,7 @@ class CodeMap {
 
 	removeSocketData(key, destroySocket) {
 		if (this.pincodes[key]) {
-			logger.debug(`removing record for ${key}`);
+			//logger.debug(`removing record for ${key}`);
 			while (this.pincodes[key].length > 0) {
 				var item = this.pincodes[key].node;
 				this.pincodes[key].remove(item);
@@ -42,7 +42,7 @@ class CodeMap {
 		let key = message.sessionId; //socket.id
 
 		if (!this.pincodes[key]) {
-			logger.debug('************************creating fifo');
+			logger.debug(`[${key}] creating que`);
 			this.pincodes[key] = require('fifo')();
 		}
 		else {
@@ -53,7 +53,7 @@ class CodeMap {
 				//logger.debug(`removing item ${this.pincodes[key].length}`);
 			}
 		}
-		logger.debug(this.pincodes[key].length);
+		//logger.debug(this.pincodes[key].length);
 		//noinspection JSUnresolvedVariable
 		this.pincodes[key].push({
 			socketId:       socket.id,
