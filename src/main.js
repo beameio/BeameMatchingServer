@@ -16,8 +16,7 @@ const beameSDK    = require('beame-sdk');
 const module_name = "MatchingServer";
 const BeameLogger = beameSDK.Logger;
 const logger      = new BeameLogger(module_name);
-const matching = new(require('./matching'))(config.MatchingServerFqdn);
-
+const matching    = new (require('./matching'))(config.MatchingServerFqdn);
 
 /**
  *
@@ -44,17 +43,14 @@ function setExpressApp(router, useStatic, folderName) {
 
 let app = setExpressApp(router, false);
 
-beameSDK.BeameServer(config.MatchingServerFqdn, app, (data, app) => {
+beameSDK.BaseHttpsServer(config.MatchingServerFqdn, {requestCert:true,rejectUnauthorized:false}, app, (data, app) => {
 	logger.debug(`BeameServer callback got `, data);
 
-	let socketio = require('socket.io')(app);
-
-	//noinspection JSUnresolvedFunction
-	socketio.of('whisperer').on('connection', matching.onWhispererConnection.bind(matching));
-	//noinspection JSUnresolvedFunction
-	socketio.of('whisperer').on('reconnect', matching.onReconnect.bind(matching));
-
-	//noinspection JSUnresolvedFunction
-	socketio.of('client').on('connection', matching.onClientConnection.bind(matching));
+	matching.loadWhisperersCreds().then(()=> {
+		matching.startSocketIoServer(app);
+	}).catch(()=> {
+		logger.error(`no whisperers creds found`);
+		matching.startSocketIoServer();
+	})
 
 });

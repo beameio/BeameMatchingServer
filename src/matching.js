@@ -2,24 +2,77 @@
  * Created by zenit1 on 25/10/2016.
  */
 "use strict";
-const beameSDK    = require('beame-sdk');
-const module_name = "Matching";
-const BeameLogger = beameSDK.Logger;
-const CommonUtils = beameSDK.CommonUtils;
-const logger      = new BeameLogger(module_name);
-const store       = new (beameSDK.BeameStore)();
+const beameSDK       = require('beame-sdk');
+const module_name    = "Matching";
+const BeameLogger    = beameSDK.Logger;
+const CommonUtils    = beameSDK.CommonUtils;
+const logger         = new BeameLogger(module_name);
+const store          = new (beameSDK.BeameStore)();
+const whisperers     = require('../config/whisperers');
+const WhispererAgent = require('./whisperer_agent');
+const CodeMap        = require('./code_map');
 
-const CodeMap = require('./code_map');
+/**
+ * @typedef {Object} SessionData
+ * @property {String} sessionId
+ * @property {Number} [timeout]
+ * @property {String} whispererFqdn
+ */
 
+/**
+ * @typedef {Object} Whisperer
+ * @property {Credential} cred
+ * @property {Object.<string, WhispererAgent>} sessions
+ */
 
 class MatchingServer {
 
 	constructor(server_fqdn) {
-		this.map        = new CodeMap();
-		this.whisperers = {};
-		this.clients    = {};
-		this.fqdn       = server_fqdn;
-		this.creds      = store.getCredential(this.fqdn);
+		this.map = new CodeMap();
+		/**  @type {Object.<string, Whisperer>} */
+		this._whisperers = {};
+		this._clients = {};
+		this.fqdn     = server_fqdn;
+	}
+
+	loadWhisperersCreds() {
+
+		return new Promise((resolve, reject) => {
+
+				const total             = Object.keys(whisperers).length;
+				let found = 0, notfound = 0;
+
+				const _checkCounter = ()=> {
+					if ((found + notfound) == total) {
+						found > 0 ? resolve() : reject();
+					}
+				};
+
+				for (let key in whisperers) {
+					//noinspection JSUnfilteredForInLoop
+					store.find(key).then(cred=> {
+
+						this._whisperers[cred.fqdn] = {cred: cred, sessions: {}};
+
+						found++;
+						_checkCounter();
+					}).catch(error=> {
+						logger.error(error);
+						notfound++;
+						_checkCounter();
+					})
+				}
+			}
+		);
+	}
+
+	startSocketIoServer(app) {
+		/** @type {Socket} */
+		let socketio = require('socket.io')(app, {secure: true});
+
+		socketio.of('whisperer').on('connect', this.onWhispererConnection.bind(this));
+		socketio.of('whisperer').on('reconnect', this.onReconnect.bind(this));
+		socketio.of('client').on('connection', this.onClientConnection.bind(this));
 	}
 
 	onWhispererConnection(socket) {
@@ -31,7 +84,9 @@ class MatchingServer {
 
 		socket.on('disconnect', this.onDisconnect.bind(this, socket));
 
-		socket.on('add_pincode', this.onPinAdded.bind(this, socket));
+		socket.on('create_session', this.onCreateSession.bind(this, socket));
+
+		socket.on('stop_play', this.onStopPlay.bind(this,socket));
 	}
 
 	onClientConnection(socket) {
@@ -44,26 +99,72 @@ class MatchingServer {
 
 		socket.on("idmobile", this.onIdMobile.bind(this, socket));
 
-		socket.on('disconnect', this.onDisconnect.bind(this, socket));
+		//socket.on('disconnect', this.onDisconnect.bind(this, socket));
 
 	}
 
-	onPinAdded(socket, data) {
-		logger.debug(`*****************************************PIN CODE ADDED*************************`, data);
+	/**
+	 * @param {Socket} socket
+	 * @param {SessionData} data
+	 */
+	onCreateSession(socket, data) {
+		try {
 
-		this.map.addPinCode(data, socket);
+			logger.debug(`session ${data.sessionId} creating for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
+
+			let agent = new WhispererAgent(socket, this.map, data);
+
+			this._whisperers[data.whispererFqdn].sessions[data.sessionId] = agent;
+
+			logger.debug(`sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
+
+			agent.sendPin(data);
+		}
+		catch (error) {
+			logger.error(BeameLogger.formatError(error));
+		}
+	}
+
+	/**
+	 *
+	 * @param {Socket} socket
+	 * @param {SessionData} data
+	 */
+	onStopPlay(socket,data) {
+
+		logger.debug(`stop play received from socket ${socket.id} on session ${data.sessionId}`);
+
+		let agent = this._whisperers[data.whispererFqdn].sessions[data.sessionId];
+
+		if(agent){
+			agent.disconnect();
+			delete this._whisperers[data.whispererFqdn].sessions[data.sessionId];
+		}
 	}
 
 	//noinspection JSMethodCanBeStatic
 	onReconnect(socket) {
-		logger.debug('Socket reconnected', socket.id);
+		logger.debug('Whisperer Socket reconnected', socket.id);
 		//TODO add logic for session_id
 	}
 
 	onDisconnect(socket) {
-		logger.debug('Socket disconnected', socket.id);
-		if (this.whisperers[socket.id]) {
-			delete this.whisperers[socket.id];
+		logger.debug(`Whisperer Socket ${socket.id} disconnected`);
+
+		for (let key in this._whisperers) {
+			//noinspection JSUnfilteredForInLoop
+			for (let id in this._whisperers[key].sessions) {
+				//noinspection JSUnfilteredForInLoop
+				if (this._whisperers[key].sessions[id].socketId == socket.id) {
+					//noinspection JSUnfilteredForInLoop
+					this._whisperers[key].sessions[id].disconnect();
+					//noinspection JSUnfilteredForInLoop
+					delete this._whisperers[key].sessions[id];
+					return;
+				}
+			}
+
+
 		}
 	}
 
@@ -71,7 +172,7 @@ class MatchingServer {
 
 		logger.debug(`Mobile is connected: ${socket.id}`);
 
-		this.clients[socket.id] = {
+		this._clients[socket.id] = {
 			id:         socket.id,
 			socket:     socket,
 			clientFqdn: data.fqdn
@@ -79,11 +180,25 @@ class MatchingServer {
 
 	}
 
-	onWhispererId(socket) {
-		this.whisperers[socket.id] = {
-			id:     socket.id,
-			socket: socket
+	onWhispererId(socket, data) {
+
+		const _closeSocket = message => {
+			logger.error(message);
+			socket.disconnect();
 		};
+
+		if (!data) {
+			return _closeSocket(`data not received on onWhispererId event`);
+		}
+
+		if (!this._whisperers[data.signedBy]) {
+			return _closeSocket(`whisperer fqdn ${data.signedBy} not found`);
+		}
+
+		if (!this._whisperers[data.signedBy].cred.checkSignature(data)) {
+			return _closeSocket(`whisperer ${data.signedBy} signature not valid`);
+		}
+
 	}
 
 	/**
@@ -108,20 +223,20 @@ class MatchingServer {
 				//send message to Whisperer
 				pincodeObj.socket.emit('mobile_matched', {
 					sessionId:  pincodeObj.sessionId,
-					clientFqdn: this.clients[socket.id].clientFqdn,
+					clientFqdn: this._clients[socket.id].clientFqdn,
 					signature:  signature
 				});
 
 				//send message to Mobile
-				this.clients[socket.id].socket.emit('start-session', {
+				this._clients[socket.id].socket.emit('start-session', {
 					sessionId:     pincodeObj.sessionId,
 					whispererFqdn: pincodeObj.whispererFqdn
 				});
 
 				//close socket with mobile
-				this.clients[socket.id].socket.disconnect();
+				this._clients[socket.id].socket.disconnect();
 
-				delete this.clients[socket.id];
+				delete this._clients[socket.id];
 
 				//clean pincodes
 				this.map.removeSocketData(pincodeObj.sessionId, true);
@@ -142,7 +257,7 @@ class MatchingServer {
 	onCodeHeard(socket, message) {
 		let pincode = null;
 
-		logger.debug(`code received from mobile`,message);
+		logger.debug(`code received from mobile`, message);
 
 		function _onPinFound(signature) {
 			try {
@@ -166,6 +281,7 @@ class MatchingServer {
 		}
 
 		if (message.pin) {
+			//noinspection JSUnresolvedVariable
 			pincode = JSON.parse("[" + message.pin + "]");
 			_onPinFound();
 		}
@@ -193,6 +309,8 @@ class MatchingServer {
 			});
 		}
 	}
+
+
 }
 
 

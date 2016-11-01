@@ -46,11 +46,11 @@ class CodeMap {
 			this.pincodes[key] = require('fifo')();
 		}
 		else {
-			logger.debug("Queue length " + this.pincodes[key].length);
+			//logger.debug("Queue length " + this.pincodes[key].length);
 			while (this.pincodes[key].length > maxFifoPinCodes) {
 				let item = this.pincodes[key].node;
 				this.pincodes[key].remove(item);
-				logger.debug(`removing item ${this.pincodes[key].length}`);
+				//logger.debug(`removing item ${this.pincodes[key].length}`);
 			}
 		}
 		logger.debug(this.pincodes[key].length);
