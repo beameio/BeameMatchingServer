@@ -12,77 +12,175 @@
  * @property {Array.<number>} pincode
  */
 
-const _               = require('underscore');
-const maxFifoPinCodes = 3;
-const beameSDK        = require('beame-sdk');
-const module_name     = "CodeMap";
-const BeameLogger     = beameSDK.Logger;
-const logger          = new BeameLogger(module_name);
+const _                    = require('underscore');
+const maxFifoPinCodes      = 3;
+const codeGeneratorRetries = 10;
+const beameSDK             = require('beame-sdk');
+const module_name          = "CodeMap";
+const BeameLogger          = beameSDK.Logger;
+const logger               = new BeameLogger(module_name);
 
 class CodeMap {
 
 	constructor() {
-		this.pincodes = {};
+		this._sessionPincodes = {}
+		this._pincodes        = {};
 	}
 
 	removeSocketData(key, destroySocket) {
-		if (this.pincodes[key]) {
-			//logger.debug(`removing record for ${key}`);
-			while (this.pincodes[key].length > 0) {
-				var item = this.pincodes[key].node;
-				this.pincodes[key].remove(item);
+		if (this._sessionPincodes[key]) {
+
+			while (this._sessionPincodes[key].length > 0) {
+				var item = this._sessionPincodes[key].node;
+				this._sessionPincodes[key].remove(item);
+				delete this._pincodes[item.value.pincode.toString()];
 			}
-			if (destroySocket)
-				delete this.pincodes[key];
+
+			if (destroySocket) {
+				delete this._sessionPincodes[key];
+			}
+
 		}
 	}
 
 	addPinCode(message, socket) {
 
-		let key = message.sessionId; //socket.id
+		return new Promise((resolve, reject) => {
 
-		if (!this.pincodes[key]) {
-			logger.debug(`[${key}] creating que`);
-			this.pincodes[key] = require('fifo')();
+
+				const _addPin = (pincode)=> {
+
+					let key = message.sessionId; //socket.id
+
+					if (!this._sessionPincodes[key]) {
+						logger.debug(`[${key}] creating que`);
+						this._sessionPincodes[key] = require('fifo')();
+					}
+					else {
+						while (this._sessionPincodes[key].length > maxFifoPinCodes) {
+							let item = this._sessionPincodes[key].node;
+
+							let pin = item.pincode;
+
+							this._sessionPincodes[key].remove(item);
+
+							delete this._pincodes[pin.toString()];
+						}
+					}
+					//noinspection JSUnresolvedVariable
+					this._sessionPincodes[key].push({
+						socketId:      socket.id,
+						socket:        socket,
+						sessionId:     message.sessionId,
+						pincode:       pincode,
+						whispererFqdn: message.whispererFqdn
+					});
+
+					this._pincodes[pincode.toString()] = {
+						socketId:      socket.id,
+						socket:        socket,
+						sessionId:     message.sessionId,
+						whispererFqdn: message.whispererFqdn
+					};
+
+					resolve(pincode);
+				};
+
+				this._generatePincode(codeGeneratorRetries, (error, pincode)=> {
+					if (error) {
+						logger.error(`[${message.sessionId} code generation failed on ${codeGeneratorRetries} attempts`);
+						reject(`Code generation failure`);
+					}
+					else {
+						_addPin(pincode);
+					}
+				});
+
+			}
+		);
+
+	}
+
+	_generatePincode(retries, cb) {
+		retries--;
+
+		if (retries == 0) {
+			cb(`code generation failed`, null);
 		}
 		else {
-			//logger.debug("Queue length " + this.pincodes[key].length);
-			while (this.pincodes[key].length > maxFifoPinCodes) {
-				let item = this.pincodes[key].node;
-				this.pincodes[key].remove(item);
-				//logger.debug(`removing item ${this.pincodes[key].length}`);
+			let pin = CodeMap._getRandomPin();
+
+			if (this._pincodes[pin.toString()]) {
+				this._generatePincode(retries, cb);
+			}
+			else {
+				cb(null, pin);
 			}
 		}
-		//logger.debug(this.pincodes[key].length);
-		//noinspection JSUnresolvedVariable
-		this.pincodes[key].push({
-			socketId:       socket.id,
-			socket:         socket,
-			sessionId:      message.sessionId,
-			pincode:        message.pincode,
-			whispererFqdn:  message.whispererFqdn
-		});
 	}
 
 	/**
-	 * @param pincode
-	 * @returns {PincodeToken}
+	 * @param {Array.<number>}  pincode
+	 * @returns {PincodeToken|null}
 	 */
 	matchPinCode(pincode) {
-		var keys = _.keys(this.pincodes);
 
-		for (var i = 0; i < keys.length; i++) {
-			var fifo = this.pincodes[keys[i]];
-			var node = fifo.node;
-			while (node) {
-				console.log('>>' + node.value.pincode + '>>' + pincode);
-				if (_.isEqual(node.value.pincode, pincode)) {
-					logger.debug("Bingo!");
-					return node.value;
-				}
-				node = fifo.next(node);
+		let record = this._pincodes[pincode.toString()];
+
+		if (record) {
+			return {
+				socketId:      record.socketId,
+				socket:        record.socket,
+				sessionId:     record.sessionId,
+				pincode:       pincode,
+				whispererFqdn: record.whispererFqdn
 			}
 		}
+		else {
+			//old method for recovery, TODO remove after tests
+			var keys = _.keys(this._sessionPincodes);
+			for (var i = 0; i < keys.length; i++) {
+				var fifo = this._sessionPincodes[keys[i]];
+				var node = fifo.node;
+				while (node) {
+					console.log('>>' + node.value.pincode + '>>' + pincode);
+					if (_.isEqual(node.value.pincode, pincode)) {
+						logger.debug("Bingo!");
+						return node.value;
+					}
+					node = fifo.next(node);
+				}
+			}
+		}
+
+		return null;
+	}
+
+
+	/**
+	 *
+	 * @returns {number[]}
+	 * @private
+	 */
+	static _getRandomPin() {
+		let i,
+		    dig = [9, 7, 4, 7, 11, 0];
+
+		for (i = 0; i < 6; i++) {
+			dig[i] = CodeMap._generateRandomNum(15, 0);
+		}
+		return dig;
+	}
+
+	/**
+	 *
+	 * @param {number} high
+	 * @param {number} low
+	 * @returns {number}
+	 * @private
+	 */
+	static _generateRandomNum(high, low) {
+		return Math.round(Math.random() * (high - low) + low);
 	}
 }
 

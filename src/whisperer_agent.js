@@ -65,49 +65,25 @@ class WhispererAgent {
 		this.sessionId = data.sessionId;
 		this.timeout   = data.timeout;
 
-		let pin     = WhispererAgent._getRandomPin(),
-		    pinData = {
-			    sessionId:     this.sessionId,
-			    pincode:       pin,
-			    whispererFqdn: this.fqdn
-		    };
+		let pinData = {
+			sessionId:     this.sessionId,
+			whispererFqdn: this.fqdn
+		};
 
-		this.codeMap.addPinCode(pinData, this.socket);
+		this.codeMap.addPinCode(pinData, this.socket).then(pin=> {
+			logger.debug(`[${this.sessionId }] sending pincodes to socket ${this.socket.id} pin ${pin}`);
 
-		logger.debug(`[${this.sessionId }] sending pincodes to socket ${this.socket.id} pin ${pin}`);
+			this.socket.emit('new_pin', pin);
 
-		this.socket.emit('new_pin', pin);
+			this.timer = setTimeout(this.sendPin.bind(this, data), this.timeout);
+		}).catch(error=> {
+			this.socket.emit('fail_pin', error);
+		});
 
-		this.timer = setTimeout(this.sendPin.bind(this,data), this.timeout);
+
 	}
 
 
-
-	/**
-	 *
-	 * @returns {number[]}
-	 * @private
-	 */
-	static _getRandomPin() {
-		let i,
-		    dig = [9, 7, 4, 7, 11, 0];
-
-		for (i = 0; i < 6; i++) {
-			dig[i] = WhispererAgent._generateRandomNum(15, 0);
-		}
-		return dig;
-	}
-
-	/**
-	 *
-	 * @param {number} high
-	 * @param {number} low
-	 * @returns {number}
-	 * @private
-	 */
-	static _generateRandomNum(high, low) {
-		return Math.round(Math.random() * (high - low) + low);
-	}
 }
 
 

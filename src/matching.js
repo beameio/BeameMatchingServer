@@ -86,7 +86,7 @@ class MatchingServer {
 
 		socket.on('create_session', this.onCreateSession.bind(this, socket));
 
-		socket.on('stop_play', this.onStopPlay.bind(this,socket));
+		socket.on('stop_play', this.onStopPlay.bind(this, socket));
 	}
 
 	onClientConnection(socket) {
@@ -130,13 +130,13 @@ class MatchingServer {
 	 * @param {Socket} socket
 	 * @param {SessionData} data
 	 */
-	onStopPlay(socket,data) {
+	onStopPlay(socket, data) {
 
 		logger.debug(`[${data.sessionId}] stop play received from socket ${socket.id} `);
 
 		let agent = this._whisperers[data.whispererFqdn].sessions[data.sessionId];
 
-		if(agent){
+		if (agent) {
 			agent.disconnect();
 			delete this._whisperers[data.whispererFqdn].sessions[data.sessionId];
 		}
@@ -206,7 +206,7 @@ class MatchingServer {
 	/**
 	 *
 	 * @param {PincodeToken} pincodeObj
-	 * @param {Object} socket
+	 * @param {Socket} socket
 	 * @param {String|null} [signature]
 	 */
 	createDevicePair(pincodeObj, socket, signature) {
@@ -216,6 +216,7 @@ class MatchingServer {
 			sessionId:     pincodeObj.sessionId,
 			whispererFqdn: pincodeObj.whispererFqdn
 		});
+
 		socket.removeAllListeners("pincodeHeard");
 
 		process.nextTick(()=> {
@@ -244,16 +245,26 @@ class MatchingServer {
 				this.map.removeSocketData(pincodeObj.sessionId, true);
 
 			} catch (e) {
-				logger.error(e);
+				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
 			}
 		});
-
-
 	}
 
 	/**
 	 *
-	 * @param {Object} socket
+	 * @param {Socket} socket
+	 * @param {String} event
+	 * @param {Object|string} error
+	 * @private
+	 */
+	static _emitError(socket, event, error) {
+		logger.error(error);
+		socket.emit(event, error);
+	}
+
+	/**
+	 *
+	 * @param {Socket} socket
 	 * @param {Object} message
 	 */
 	onCodeHeard(socket, message) {
@@ -261,27 +272,27 @@ class MatchingServer {
 
 		logger.debug(`code received from mobile`, message);
 
-		function _onPinFound(signature) {
+
+		const _onPinFound = (signature) => {
 			try {
 				if (!pincode) {
-					logger.error(`Pin not found `);
-					return;
+					return MatchingServer._emitError(socket, 'matching_error', `Pin not found `);
 				}
 
 				logger.debug(`onCodeHeard  ${pincode} on socketId ${socket.id}`);
 				let pincodeObj = this.map.matchPinCode(pincode);
 
 				if (!pincodeObj) {
-					logger.debug(`Pincode not found`);
-					return;
+					return MatchingServer._emitError(socket, 'matching_error', `Pincode not found`);
 				}
 
 				this.createDevicePair(pincodeObj, socket, signature);
 			} catch (e) {
-				logger.error(e);
+				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
 			}
-		}
+		};
 
+		//noinspection JSUnresolvedVariable
 		if (message.pin) {
 			//noinspection JSUnresolvedVariable
 			pincode = JSON.parse("[" + message.pin + "]");
@@ -293,21 +304,19 @@ class MatchingServer {
 
 			store.find(signature.signedBy).then(creds=> {
 				if (!creds.checkSignature(signature)) {
-					logger.error(`Client Signature by ${signature.signedBy} not valid`);
-					return;
+					return MatchingServer._emitError(socket, 'matching_error', `Client Signature by ${signature.signedBy} not valid`);
 				}
 
 				if (!signature.signedData["pin"]) {
-					logger.error(`Pin not found in signature`, signature);
-					return;
+					return MatchingServer._emitError(socket, 'matching_error', `Pin not found in signature`);
 				}
 
 				pincode = JSON.parse("[" + signature.signedData["pin"] + "]");
 
 				_onPinFound.call(this, CommonUtils.stringify(signature));
 
-			}).catch(()=> {
-
+			}).catch(error=> {
+				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
 			});
 		}
 	}
