@@ -9,6 +9,7 @@
  * @property {Object} socket
  * @property {String} sessionId
  * @property {String} whispererFqdn
+ * @property {String} mode
  * @property {Array.<number>} pincode
  */
 
@@ -23,7 +24,7 @@ const logger               = new BeameLogger(module_name);
 class CodeMap {
 
 	constructor() {
-		this._sessionPincodes = {}
+		this._sessionPincodes = {};
 		this._pincodes        = {};
 	}
 
@@ -73,14 +74,16 @@ class CodeMap {
 						socket:        socket,
 						sessionId:     message.sessionId,
 						pincode:       pincode,
-						whispererFqdn: message.whispererFqdn
+						whispererFqdn: message.whispererFqdn,
+						mode:          message.mode
 					});
 
 					this._pincodes[pincode.toString()] = {
 						socketId:      socket.id,
 						socket:        socket,
 						sessionId:     message.sessionId,
-						whispererFqdn: message.whispererFqdn
+						whispererFqdn: message.whispererFqdn,
+						mode:          message.mode
 					};
 
 					resolve(pincode);
@@ -133,7 +136,8 @@ class CodeMap {
 				socket:        record.socket,
 				sessionId:     record.sessionId,
 				pincode:       pincode,
-				whispererFqdn: record.whispererFqdn
+				whispererFqdn: record.whispererFqdn,
+				mode:record.mode
 			}
 		}
 		else {

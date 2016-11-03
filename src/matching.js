@@ -2,6 +2,7 @@
  * Created by zenit1 on 25/10/2016.
  */
 "use strict";
+const config         = require('../config/config');
 const beameSDK       = require('beame-sdk');
 const module_name    = "Matching";
 const BeameLogger    = beameSDK.Logger;
@@ -17,6 +18,7 @@ const CodeMap        = require('./code_map');
  * @property {String} sessionId
  * @property {Number} [timeout]
  * @property {String} whispererFqdn
+ * @property {String} mode
  */
 
 /**
@@ -70,7 +72,7 @@ class MatchingServer {
 		/** @type {Socket} */
 		let socketio = require('socket.io')(app, {secure: true});
 
-		socketio.of('whisperer').on('connect', this.onWhispererConnection.bind(this));
+		socketio.of('whisperer').on('connection', this.onWhispererConnection.bind(this));
 		socketio.of('whisperer').on('reconnect', this.onReconnect.bind(this));
 		socketio.of('client').on('connection', this.onClientConnection.bind(this));
 	}
@@ -207,7 +209,7 @@ class MatchingServer {
 	 *
 	 * @param {PincodeToken} pincodeObj
 	 * @param {Socket} socket
-	 * @param {String|null} [signature]
+	 * @param {SignatureToken|null} [signature]
 	 */
 	createDevicePair(pincodeObj, socket, signature) {
 
@@ -227,7 +229,7 @@ class MatchingServer {
 				pincodeObj.socket.emit('mobile_matched', {
 					sessionId:  pincodeObj.sessionId,
 					clientFqdn: this._clients[socket.id].clientFqdn,
-					signature:  signature
+					signature:  signature,
 				});
 
 				//send message to Mobile
@@ -272,7 +274,12 @@ class MatchingServer {
 
 		logger.debug(`code received from mobile`, message);
 
-
+		/**
+		 *
+		 * @param {SignatureToken} [signature]
+		 * @returns {*}
+		 * @private
+		 */
 		const _onPinFound = (signature) => {
 			try {
 				if (!pincode) {
@@ -284,6 +291,10 @@ class MatchingServer {
 
 				if (!pincodeObj) {
 					return MatchingServer._emitError(socket, 'matching_error', `Pincode not found`);
+				}
+
+				if (pincodeObj.mode == config.WhispererMode.SESSION && !signature) {
+					return MatchingServer._emitError(socket, 'matching_error', `Signature Required`);
 				}
 
 				this.createDevicePair(pincodeObj, socket, signature);
@@ -318,6 +329,9 @@ class MatchingServer {
 			}).catch(error=> {
 				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
 			});
+		}
+		else {
+			return MatchingServer._emitError(socket, 'matching_error', `Pincode required`);
 		}
 	}
 

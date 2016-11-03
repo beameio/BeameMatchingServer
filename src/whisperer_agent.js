@@ -33,6 +33,8 @@ class WhispererAgent {
 		/** @type {Number} */
 		this.timeout = data.timeout;
 
+		this.mode = data.mode;
+
 		/** @type {Object} */
 		this.timer = null;
 
@@ -67,7 +69,8 @@ class WhispererAgent {
 
 		let pinData = {
 			sessionId:     this.sessionId,
-			whispererFqdn: this.fqdn
+			whispererFqdn: this.fqdn,
+			mode:          this.mode
 		};
 
 		this.codeMap.addPinCode(pinData, this.socket).then(pin=> {
