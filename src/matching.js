@@ -179,7 +179,7 @@ class MatchingServer {
 		this._clients[socket.id] = {
 			id:         socket.id,
 			socket:     socket,
-			clientFqdn: data.fqdn
+			clientFqdn:  data.fqdn
 		};
 
 	}
@@ -228,7 +228,7 @@ class MatchingServer {
 				//send message to Whisperer
 				pincodeObj.socket.emit('mobile_matched', {
 					sessionId:  pincodeObj.sessionId,
-					clientFqdn: this._clients[socket.id].clientFqdn,
+					clientFqdn: this._clients[socket.id] ? this._clients[socket.id].clientFqdn : null,
 					signature:  signature,
 				});
 
@@ -238,10 +238,13 @@ class MatchingServer {
 					whispererFqdn: pincodeObj.whispererFqdn
 				});
 
-				//close socket with mobile
-				this._clients[socket.id].socket.disconnect();
+				if(this._clients[socket.id]){
+					//close socket with mobile
+					this._clients[socket.id].socket.disconnect();
 
-				delete this._clients[socket.id];
+					delete this._clients[socket.id];
+				}
+
 
 				//clean pincodes
 				this.map.removeSocketData(pincodeObj.sessionId, true);
