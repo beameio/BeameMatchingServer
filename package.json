@@ -1,27 +1,27 @@
 {
-    "name": "BeameMatchingServer",
-    "version": "0.0.1",
-    "description": "Beame Matching Server",
-    "private": true,
-    "main": "index.js",
-    "scripts": {
-        "start": "node ./src/main.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git@github.com:beameio/BeameMatchingServer.git"
-    },
-    "author": "beame.io",
-    "license": "ISC",
-    "dependencies": {
-        "beame-sdk": "git+https://github.com/beameio/beame-sdk.git",
-        "body-parser": "^1.15.2",
-        "express": "^4.14.0",
-        "fifo": "^2.3.0",
-        "socket.io": "^1.5.1",
-        "underscore": "^1.8.3"
-    },
-    "devDependencies": {
-        "socket.io-client": "^1.5.1"
-    }
+  "name": "BeameMatchingServer",
+  "version": "0.0.2",
+  "description": "Beame Matching Server",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:beameio/BeameMatchingServer.git"
+  },
+  "author": "beame.io",
+  "license": "ISC",
+  "dependencies": {
+    "beame-sdk": "git+https://github.com/beameio/beame-sdk.git",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "fifo": "^2.3.0",
+    "socket.io": "^1.5.1",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^1.5.1"
+  }
 }
