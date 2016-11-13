@@ -48,7 +48,7 @@ class MatchingServer {
 		this._fqdn     = fqdn || config.MatchingServerFqdn;
 		this._app      = app || setExpressApp(router, false);
 		this._matching = new (require('./matching'))(this._fqdn);
-		this._server = null;
+		this._server   = null;
 	}
 
 	start() {
@@ -67,9 +67,10 @@ class MatchingServer {
 	}
 
 	//noinspection JSUnusedGlobalSymbols
-	stop(){
-		if(this._server){
+	stop() {
+		if (this._server) {
 			this._server.close();
+			this._server = null;
 		}
 	}
 }
