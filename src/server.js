@@ -51,19 +51,28 @@ class MatchingServer {
 		this._server   = null;
 	}
 
-	start() {
+	/**
+	 *
+	 * @param {Function|null} cb
+	 */
+	start(cb) {
 		beameSDK.BaseHttpsServer(this._fqdn, {requestCert: true, rejectUnauthorized: false}, this._app, (data, app) => {
-			logger.debug(`BeameServer callback got `, data);
+				logger.debug(`BeameServer callback got `, data);
 
-			this._server = app;
+				this._server = app;
 
-			this._matching.loadWhisperersCreds().then(()=> {
-				this._matching.startSocketIoServer(app);
-			}).catch(()=> {
-				logger.error(`no whisperers creds found`);
-				this._matching.startSocketIoServer();
-			})
-		});
+				this._matching.loadWhisperersCreds().then(()=> {
+					this._matching.startSocketIoServer(app);
+				}).catch(()=> {
+					logger.error(`no whisperers creds found`);
+					this._matching.startSocketIoServer();
+				});
+
+				cb && cb(null, app);
+			},
+			error=> {
+				cb && cb(error, null);
+			});
 	}
 
 	//noinspection JSUnusedGlobalSymbols
