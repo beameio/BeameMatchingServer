@@ -241,8 +241,9 @@ class MatchingServer {
 				if(this._clients[socket.id]){
 					//close socket with mobile
 					this._clients[socket.id].socket.disconnect();
-
-					delete this._clients[socket.id];
+					this._clients[socket.id].socket.on('disconnect',function(){
+						delete this._clients[socket.id];
+					});
 				}
 
 
