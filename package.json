@@ -1,12 +1,12 @@
 {
   "name": "BeameMatchingServer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Beame Matching Server",
   "private": true,
+  "main": "index.js",
   "scripts": {
     "start": "node ./src/main.js"
   },
-  "main": "./src/main.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:beameio/BeameMatchingServer.git"
