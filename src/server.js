@@ -57,7 +57,7 @@ class MatchingServer {
 	 */
 	start(cb) {
 		beameSDK.BaseHttpsServer(this._fqdn, {requestCert: true, rejectUnauthorized: false}, this._app, (data, app) => {
-				logger.debug(`BeameServer callback got `, data);
+				logger.info(`Beame Matching server started on ${this._fqdn}`);
 
 				this._server = app;
 
