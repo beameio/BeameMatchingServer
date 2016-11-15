@@ -43,17 +43,19 @@ class MatchingServer {
 	/**
 	 * @param {String} [fqdn]
 	 * @param {Router} [app]
+	 * @param {Array.<string> | null} [whisperers]
 	 */
-	constructor(fqdn, app) {
+	constructor(fqdn, app, whisperers) {
 		this._fqdn     = fqdn || config.MatchingServerFqdn;
 		this._app      = app || setExpressApp(router, false);
 		this._matching = new (require('./matching'))(this._fqdn);
+		this._whisperers = whisperers || [];
 		this._server   = null;
 	}
 
 	/**
 	 *
-	 * @param {Function|null} cb
+	 * @param {Function|null} [cb]
 	 */
 	start(cb) {
 		beameSDK.BaseHttpsServer(this._fqdn, {requestCert: true, rejectUnauthorized: false}, this._app, (data, app) => {
@@ -61,7 +63,7 @@ class MatchingServer {
 
 				this._server = app;
 
-				this._matching.loadWhisperersCreds().then(()=> {
+				this._matching.loadWhisperersCreds(this._whisperers).then(()=> {
 					this._matching.startSocketIoServer(app);
 				}).catch(()=> {
 					logger.error(`no whisperers creds found`);

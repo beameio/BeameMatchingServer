@@ -2,16 +2,16 @@
  * Created by zenit1 on 25/10/2016.
  */
 "use strict";
-const config         = require('../config/config');
-const beameSDK       = require('beame-sdk');
-const module_name    = "Matching";
-const BeameLogger    = beameSDK.Logger;
-const CommonUtils    = beameSDK.CommonUtils;
-const logger         = new BeameLogger(module_name);
-const store          = new (beameSDK.BeameStore)();
-const whisperers     = require('../config/whisperers');
-const WhispererAgent = require('./whisperer_agent');
-const CodeMap        = require('./code_map');
+const config            = require('../config/config');
+const beameSDK          = require('beame-sdk');
+const module_name       = "Matching";
+const BeameLogger       = beameSDK.Logger;
+const CommonUtils       = beameSDK.CommonUtils;
+const logger            = new BeameLogger(module_name);
+const store             = new (beameSDK.BeameStore)();
+const config_whisperers = require('../config/whisperers');
+const WhispererAgent    = require('./whisperer_agent');
+const CodeMap           = require('./code_map');
 
 /**
  * @typedef {Object} SessionData
@@ -29,7 +29,11 @@ const CodeMap        = require('./code_map');
 
 class MatchingServer {
 
-	constructor(server_fqdn) {
+	/**
+	 * @param {String} server_fqdn
+	 *
+	 */
+	constructor(server_fqdn,) {
 		this.map = new CodeMap();
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
@@ -37,11 +41,19 @@ class MatchingServer {
 		this.fqdn     = server_fqdn;
 	}
 
-	loadWhisperersCreds() {
+	/**
+	 * @param {Array.<string> | null} [whisperers]
+	 * @returns {Promise}
+	 */
+	loadWhisperersCreds(whisperers) {
 
 		return new Promise((resolve, reject) => {
 
-				const total             = Object.keys(whisperers).length;
+				let fqdnsArray = whisperers.concat(Object.keys(config_whisperers));
+
+				let whisperer_fqdns = new Set(fqdnsArray);
+
+				const total             = whisperer_fqdns.size;
 				let found = 0, notfound = 0;
 
 				const _checkCounter = ()=> {
@@ -50,9 +62,8 @@ class MatchingServer {
 					}
 				};
 
-				for (let key in whisperers) {
-					//noinspection JSUnfilteredForInLoop
-					store.find(key).then(cred=> {
+				whisperer_fqdns.forEach(fqdn => {
+					store.find(fqdn).then(cred => {
 
 						this._whisperers[cred.fqdn] = {cred: cred, sessions: {}};
 
@@ -63,7 +74,8 @@ class MatchingServer {
 						notfound++;
 						_checkCounter();
 					})
-				}
+				});
+
 			}
 		);
 	}
@@ -179,7 +191,7 @@ class MatchingServer {
 		this._clients[socket.id] = {
 			id:         socket.id,
 			socket:     socket,
-			clientFqdn:  data.fqdn
+			clientFqdn: data.fqdn
 		};
 
 	}
@@ -238,10 +250,10 @@ class MatchingServer {
 					whispererFqdn: pincodeObj.whispererFqdn
 				});
 
-				if(this._clients[socket.id]){
+				if (this._clients[socket.id]) {
 					//close socket with mobile
 					this._clients[socket.id].socket.disconnect();
-					this._clients[socket.id].socket.on('disconnect',function(){
+					this._clients[socket.id].socket.on('disconnect', () => {
 						delete this._clients[socket.id];
 					});
 				}
