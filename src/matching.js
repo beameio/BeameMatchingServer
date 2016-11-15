@@ -33,7 +33,7 @@ class MatchingServer {
 	 * @param {String} server_fqdn
 	 *
 	 */
-	constructor(server_fqdn,) {
+	constructor(server_fqdn) {
 		this.map = new CodeMap();
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
