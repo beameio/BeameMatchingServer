@@ -82,7 +82,7 @@ class MatchingServer {
 
 	startSocketIoServer(app) {
 		/** @type {Socket} */
-		let socketio = require('socket.io')(app, {transports: ['polling']});
+		let socketio = require('socket.io')(app, {secure: true});
 
 		socketio.of('whisperer').on('connection', this.onWhispererConnection.bind(this));
 		socketio.of('whisperer').on('reconnect', this.onReconnect.bind(this));
