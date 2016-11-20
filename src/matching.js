@@ -67,7 +67,7 @@ class MatchingServer {
 				whisperer_fqdns.forEach(fqdn => {
 					store.find(fqdn).then(cred => {
 
-						this._whisperers[cred._fqdn] = {cred: cred, sessions: {}};
+						this._whisperers[cred.getKey("FQDN")] = {cred: cred, sessions: {}};
 
 						found++;
 						_checkCounter();
