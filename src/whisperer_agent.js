@@ -16,46 +16,49 @@ class WhispererAgent {
 	constructor(socket, codeMap, data) {
 
 		/** @type {String} */
-		this.fqdn = data.whispererFqdn;
+		this._fqdn = data.whispererFqdn;
 
-		/** @type {codeMap} */
-		this.codeMap = codeMap;
+		/** @type {_codeMap} */
+		this._codeMap = codeMap;
 
 		/** @type {Socket} */
-		this.socket = socket;
+		this._socket = socket;
 
 		/** @type {String} */
-		this.socketId = socket.id;
-
-		/** @type {String} */
-		this.sessionId = data.sessionId;
-
-		/** @type {Number} */
-		this.timeout = data.timeout;
-
-		this.mode = data.mode;
+		this._socketId = socket.id;
 
 		/** @type {Object} */
-		this.timer = null;
+		this._socket_options = data.socket_options;
+
+		/** @type {String} */
+		this._sessionId = data.sessionId;
+
+		/** @type {Number} */
+		this._timeout = data.timeout;
+
+		this._mode = data.mode;
+
+		/** @type {Object} */
+		this._timer = null;
 
 	}
 
 	disconnect() {
-		logger.debug(`[${this.sessionId }] Disconnecting from socket ${this.socketId}`);
-		this.codeMap.removeSocketData(this.sessionId, true);
+		logger.debug(`[${this._sessionId }] Disconnecting from socket ${this._socketId}`);
+		this._codeMap.removeSocketData(this._sessionId, true);
 		//noinspection JSUnfilteredForInLoop
-		this.socketId  = null;
-		this.socket    = null;
-		this.sessionId = null;
-		this.timeout   = null;
+		this._socketId  = null;
+		this._socket    = null;
+		this._sessionId = null;
+		this._timeout   = null;
 		this._clearTimer();
-		this.timer = null;
+		this._timer = null;
 
 	}
 
 	_clearTimer() {
-		if (this.timer) {
-			clearTimeout(this.timer);
+		if (this._timer) {
+			clearTimeout(this._timer);
 		}
 	}
 
@@ -64,23 +67,24 @@ class WhispererAgent {
 	 * @param {SessionData} data
 	 */
 	sendPin(data) {
-		this.sessionId = data.sessionId;
-		this.timeout   = data.timeout;
+		this._sessionId = data.sessionId;
+		this._timeout   = data.timeout;
 
 		let pinData = {
-			sessionId:     this.sessionId,
-			whispererFqdn: this.fqdn,
-			mode:          this.mode
+			sessionId:      this._sessionId,
+			whispererFqdn:  this._fqdn,
+			socket_options: this._socket_options,
+			mode:           this._mode
 		};
 
-		this.codeMap.addPinCode(pinData, this.socket).then(pin=> {
-			logger.debug(`[${this.sessionId }] sending pincodes to socket ${this.socket.id} pin ${pin}`);
+		this._codeMap.addPinCode(pinData, this._socket).then(pin => {
+			logger.debug(`[${this._sessionId }] sending pincodes to socket ${this._socket.id} pin ${pin}`);
 
-			this.socket.emit('new_pin', pin);
+			this._socket.emit('new_pin', pin);
 
-			this.timer = setTimeout(this.sendPin.bind(this, data), this.timeout);
-		}).catch(error=> {
-			this.socket.emit('fail_pin', error);
+			this._timer = setTimeout(this.sendPin.bind(this, data), this._timeout);
+		}).catch(error => {
+			this._socket.emit('fail_pin', error);
 		});
 
 

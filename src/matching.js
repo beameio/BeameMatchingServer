@@ -19,6 +19,7 @@ const CodeMap           = require('./code_map');
  * @property {Number} [timeout]
  * @property {String} whispererFqdn
  * @property {String} mode
+ * @property {Object} socket_options => Whisperer server socket options
  */
 
 /**
@@ -34,11 +35,12 @@ class MatchingServer {
 	 *
 	 */
 	constructor(server_fqdn) {
-		this.map = new CodeMap();
+
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
+		this._map     = new CodeMap();
 		this._clients = {};
-		this.fqdn     = server_fqdn;
+		this._fqdn    = server_fqdn;
 	}
 
 	/**
@@ -56,7 +58,7 @@ class MatchingServer {
 				const total             = whisperer_fqdns.size;
 				let found = 0, notfound = 0;
 
-				const _checkCounter = ()=> {
+				const _checkCounter = () => {
 					if ((found + notfound) == total) {
 						found > 0 ? resolve() : reject();
 					}
@@ -65,11 +67,11 @@ class MatchingServer {
 				whisperer_fqdns.forEach(fqdn => {
 					store.find(fqdn).then(cred => {
 
-						this._whisperers[cred.fqdn] = {cred: cred, sessions: {}};
+						this._whisperers[cred._fqdn] = {cred: cred, sessions: {}};
 
 						found++;
 						_checkCounter();
-					}).catch(error=> {
+					}).catch(error => {
 						logger.error(error);
 						notfound++;
 						_checkCounter();
@@ -126,7 +128,7 @@ class MatchingServer {
 
 			logger.debug(`[${data.sessionId}] create session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
 
-			let agent = new WhispererAgent(socket, this.map, data);
+			let agent = new WhispererAgent(socket, this._map, data);
 
 			this._whisperers[data.whispererFqdn].sessions[data.sessionId] = agent;
 
@@ -191,7 +193,7 @@ class MatchingServer {
 		this._clients[socket.id] = {
 			id:         socket.id,
 			socket:     socket,
-			clientFqdn: data.fqdn
+			clientFqdn: data._fqdn
 		};
 
 	}
@@ -233,7 +235,7 @@ class MatchingServer {
 
 		socket.removeAllListeners("pincodeHeard");
 
-		process.nextTick(()=> {
+		process.nextTick(() => {
 
 			try {
 
@@ -241,13 +243,14 @@ class MatchingServer {
 				pincodeObj.socket.emit('mobile_matched', {
 					sessionId:  pincodeObj.sessionId,
 					clientFqdn: this._clients[socket.id] ? this._clients[socket.id].clientFqdn : null,
-					signature:  signature,
+					signature:  signature
 				});
 
 				//send message to Mobile
 				this._clients[socket.id].socket.emit('start-session', {
-					sessionId:     pincodeObj.sessionId,
-					whispererFqdn: pincodeObj.whispererFqdn
+					sessionId:      pincodeObj.sessionId,
+					whispererFqdn:  pincodeObj.whispererFqdn,
+					socket_options: pincodeObj.socket_options
 				});
 
 				if (this._clients[socket.id]) {
@@ -260,7 +263,7 @@ class MatchingServer {
 
 
 				//clean pincodes
-				this.map.removeSocketData(pincodeObj.sessionId, true);
+				this._map.removeSocketData(pincodeObj.sessionId, true);
 
 			} catch (e) {
 				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
@@ -303,7 +306,7 @@ class MatchingServer {
 				}
 
 				logger.debug(`onCodeHeard  ${pincode} on socketId ${socket.id}`);
-				let pincodeObj = this.map.matchPinCode(pincode);
+				let pincodeObj = this._map.matchPinCode(pincode);
 
 				if (!pincodeObj) {
 					return MatchingServer._emitError(socket, 'matching_error', `Pincode not found`);
@@ -329,7 +332,7 @@ class MatchingServer {
 
 			let signature = CommonUtils.parse(message.sign);
 
-			store.find(signature.signedBy).then(creds=> {
+			store.find(signature.signedBy).then(creds => {
 				if (!creds.checkSignature(signature)) {
 					return MatchingServer._emitError(socket, 'matching_error', `Client Signature by ${signature.signedBy} not valid`);
 				}
@@ -342,7 +345,7 @@ class MatchingServer {
 
 				_onPinFound.call(this, CommonUtils.stringify(signature));
 
-			}).catch(error=> {
+			}).catch(error => {
 				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
 			});
 		}

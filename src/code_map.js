@@ -9,6 +9,7 @@
  * @property {Object} socket
  * @property {String} sessionId
  * @property {String} whispererFqdn
+ * @property {Object} socket_options => Whisperer server socket options
  * @property {String} mode
  * @property {Array.<number>} pincode
  */
@@ -32,7 +33,7 @@ class CodeMap {
 		if (this._sessionPincodes[key]) {
 
 			while (this._sessionPincodes[key].length > 0) {
-				var item = this._sessionPincodes[key].node;
+				let item = this._sessionPincodes[key].node;
 				this._sessionPincodes[key].remove(item);
 				delete this._pincodes[item.value.pincode.toString()];
 			}
@@ -75,6 +76,7 @@ class CodeMap {
 						sessionId:     message.sessionId,
 						pincode:       pincode,
 						whispererFqdn: message.whispererFqdn,
+						socket_options:message.socket_options,
 						mode:          message.mode
 					});
 
@@ -83,6 +85,7 @@ class CodeMap {
 						socket:        socket,
 						sessionId:     message.sessionId,
 						whispererFqdn: message.whispererFqdn,
+						socket_options:message.socket_options,
 						mode:          message.mode
 					};
 
@@ -137,15 +140,16 @@ class CodeMap {
 				sessionId:     record.sessionId,
 				pincode:       pincode,
 				whispererFqdn: record.whispererFqdn,
+				socket_options:record.socket_options,
 				mode:record.mode
 			}
 		}
 		else {
 			//old method for recovery, TODO remove after tests
-			var keys = _.keys(this._sessionPincodes);
-			for (var i = 0; i < keys.length; i++) {
-				var fifo = this._sessionPincodes[keys[i]];
-				var node = fifo.node;
+			let keys = _.keys(this._sessionPincodes);
+			for (let i = 0; i < keys.length; i++) {
+				let fifo = this._sessionPincodes[keys[i]];
+				let node = fifo.node;
 				while (node) {
 					console.log('>>' + node.value.pincode + '>>' + pincode);
 					if (_.isEqual(node.value.pincode, pincode)) {
