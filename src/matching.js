@@ -312,9 +312,11 @@ class MatchingServer {
 					return MatchingServer._emitError(socket, 'matching_error', `Pincode not found`);
 				}
 
-				if (pincodeObj.mode == config.WhispererMode.SESSION && !signature) {
-					return MatchingServer._emitError(socket, 'matching_error', `Signature Required`);
-				}
+
+				//TODO Uncomment after demo
+				// if (pincodeObj.mode == config.WhispererMode.SESSION && !signature) {
+				// 	return MatchingServer._emitError(socket, 'matching_error', `Signature Required`);
+				// }
 
 				this.createDevicePair(pincodeObj, socket, signature);
 			} catch (e) {
