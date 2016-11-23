@@ -38,6 +38,10 @@ class WhispererAgent {
 
 		this._mode = data.mode;
 
+		this._matchingServerFqdn = data.matching;
+
+		this._servicename = data.service;
+
 		/** @type {Object} */
 		this._timer = null;
 
@@ -74,7 +78,9 @@ class WhispererAgent {
 			sessionId:      this._sessionId,
 			whispererFqdn:  this._fqdn,
 			socket_options: this._socket_options,
-			mode:           this._mode
+			mode:           this._mode,
+			matching:       this._matchingServerFqdn,
+			service:        this._servicename
 		};
 
 		this._codeMap.addPinCode(pinData, this._socket).then(pin => {

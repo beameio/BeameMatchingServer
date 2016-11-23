@@ -50,7 +50,7 @@ class CodeMap {
 		return new Promise((resolve, reject) => {
 
 
-				const _addPin = (pincode)=> {
+				const _addPin = (pincode) => {
 
 					let key = message.sessionId; //socket.id
 
@@ -71,28 +71,32 @@ class CodeMap {
 					}
 					//noinspection JSUnresolvedVariable
 					this._sessionPincodes[key].push({
-						socketId:      socket.id,
-						socket:        socket,
-						sessionId:     message.sessionId,
-						pincode:       pincode,
-						whispererFqdn: message.whispererFqdn,
-						socket_options:message.socket_options,
-						mode:          message.mode
+						socketId:       socket.id,
+						socket:         socket,
+						sessionId:      message.sessionId,
+						pincode:        pincode,
+						whispererFqdn:  message.whispererFqdn,
+						socket_options: message.socket_options,
+						mode:           message.mode,
+						matching:       message.matching,
+						service:        message.service
 					});
 
 					this._pincodes[pincode.toString()] = {
-						socketId:      socket.id,
-						socket:        socket,
-						sessionId:     message.sessionId,
-						whispererFqdn: message.whispererFqdn,
-						socket_options:message.socket_options,
-						mode:          message.mode
+						socketId:       socket.id,
+						socket:         socket,
+						sessionId:      message.sessionId,
+						whispererFqdn:  message.whispererFqdn,
+						socket_options: message.socket_options,
+						mode:           message.mode,
+						matching:       message.matching,
+						service:        message.service
 					};
 
 					resolve(pincode);
 				};
 
-				this._generatePincode(codeGeneratorRetries, (error, pincode)=> {
+				this._generatePincode(codeGeneratorRetries, (error, pincode) => {
 					if (error) {
 						logger.error(`[${message.sessionId} code generation failed on ${codeGeneratorRetries} attempts`);
 						reject(`Code generation failure`);
@@ -135,13 +139,15 @@ class CodeMap {
 
 		if (record) {
 			return {
-				socketId:      record.socketId,
-				socket:        record.socket,
-				sessionId:     record.sessionId,
-				pincode:       pincode,
-				whispererFqdn: record.whispererFqdn,
-				socket_options:record.socket_options,
-				mode:record.mode
+				socketId:       record.socketId,
+				socket:         record.socket,
+				sessionId:      record.sessionId,
+				pincode:        pincode,
+				whispererFqdn:  record.whispererFqdn,
+				socket_options: record.socket_options,
+				mode:           record.mode,
+				matching:       record.matching,
+				service:        record.service
 			}
 		}
 		else {

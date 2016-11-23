@@ -20,6 +20,8 @@ const CodeMap           = require('./code_map');
  * @property {String} whispererFqdn
  * @property {String} mode
  * @property {Object} socket_options => Whisperer server socket options
+ * @property {String} matching
+ * @property {String} service
  */
 
 /**
