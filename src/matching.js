@@ -117,6 +117,10 @@ class MatchingServer {
 
 		socket.on("idmobile", this.onIdMobile.bind(this, socket));
 
+		socket.on("okToClose",function () {
+			socket.disconnect();
+		});
+
 		//socket.on('disconnect', this.onDisconnect.bind(this, socket));
 
 	}
@@ -135,11 +139,11 @@ class MatchingServer {
 			this._whisperers[data.whispererFqdn].sessions[data.sessionId] = agent;
 
 			logger.debug(`[${data.sessionId}] sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
-
+			agent.setQrDataListener();
 			agent.sendPin(data);
 		}
 		catch (error) {
-			logger.error(BeameLogger.formatError(error));
+			logger.error(error.message);
 		}
 	}
 
@@ -240,24 +244,29 @@ class MatchingServer {
 		process.nextTick(() => {
 
 			try {
-
-				//send message to Whisperer
-				pincodeObj.socket.emit('mobile_matched', {
-					sessionId:  pincodeObj.sessionId,
-					clientFqdn: this._clients[socket.id] ? this._clients[socket.id].clientFqdn : null,
-					signature:  signature
-				});
-
 				//send message to Mobile
-				this._clients[socket.id].socket.emit('start-session', {
-					sessionId:      pincodeObj.sessionId,
-					whispererFqdn:  pincodeObj.whispererFqdn,
-					socket_options: pincodeObj.socket_options
-				});
+				if(pincodeObj.qrData && Object.keys(pincodeObj.qrData).length > 3){
+					console.log('Matching to mobile: session_data');
+					this._clients[socket.id].socket.emit('session_data',JSON.stringify(pincodeObj.qrData));
+				}
+				else{
+					//send message to Whisperer
+					pincodeObj.socket.emit('mobile_matched', {
+						sessionId:  pincodeObj.sessionId,
+						clientFqdn: this._clients[socket.id] ? this._clients[socket.id].clientFqdn : null,
+						signature:  signature
+					});
+
+					this._clients[socket.id].socket.emit('start-session', {
+						sessionId:      pincodeObj.sessionId,
+						whispererFqdn:  pincodeObj.whispererFqdn,
+						socket_options: pincodeObj.socket_options
+					});
+				}
 
 				if (this._clients[socket.id]) {
 					//close socket with mobile
-					this._clients[socket.id].socket.disconnect();
+					//this._clients[socket.id].socket.disconnect();
 					this._clients[socket.id].socket.on('disconnect', () => {
 						delete this._clients[socket.id];
 					});
@@ -293,7 +302,7 @@ class MatchingServer {
 	onCodeHeard(socket, message) {
 		let pincode = null;
 
-		logger.debug(`code received from mobile`, message);
+		logger.info(`code received from mobile`, message);
 
 		/**
 		 *

@@ -44,7 +44,6 @@ class WhispererAgent {
 
 		/** @type {Object} */
 		this._timer = null;
-
 	}
 
 	disconnect() {
@@ -57,12 +56,24 @@ class WhispererAgent {
 		this._timeout   = null;
 		this._clearTimer();
 		this._timer = null;
-
+		this._qrData = {};
 	}
 
 	_clearTimer() {
 		if (this._timer) {
 			clearTimeout(this._timer);
+		}
+	}
+
+	setQrDataListener(){
+		if(this._socket){
+			this._socket.on('qrData', function (data) {
+				console.log('Matching got QRdata:', data);
+				this._qrData = JSON.parse(data);
+				if(this._codeMap){
+					this._codeMap.addQrData(this._qrData);
+				}
+			}.bind(this));
 		}
 	}
 
@@ -82,7 +93,10 @@ class WhispererAgent {
 			matching:       this._matchingServerFqdn,
 			service:        this._servicename
 		};
-
+		if(this._qrData){
+			console.log('qr data added by sendPin:',this._qrData);
+			pinData['qrData'] = this._qrData;
+		}
 		this._codeMap.addPinCode(pinData, this._socket).then(pin => {
 			logger.debug(`[${this._sessionId }] sending pincodes to socket ${this._socket.id} pin ${pin}`);
 
@@ -93,9 +107,7 @@ class WhispererAgent {
 			this._socket.emit('fail_pin', error);
 		});
 
-
 	}
-
 
 }
 

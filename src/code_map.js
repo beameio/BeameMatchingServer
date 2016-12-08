@@ -45,6 +45,19 @@ class CodeMap {
 		}
 	}
 
+	addQrData(qrData){
+		if(qrData.currentPin != 'none' && qrData.sessionId){
+			if(this._sessionPincodes[qrData.sessionId]){
+				logger.info('Matching adding qrData to _sessionPincodes');
+				this._sessionPincodes[qrData.sessionId].qrData = qrData;
+			}
+			if(this._pincodes[qrData.currentPin.toString()]){
+				logger.info('Matching adding qrData to _pincodes');
+				this._pincodes[qrData.currentPin.toString()].qrData = qrData;
+			}
+		}
+	}
+
 	addPinCode(message, socket) {
 
 		return new Promise((resolve, reject) => {
@@ -79,7 +92,8 @@ class CodeMap {
 						socket_options: message.socket_options,
 						mode:           message.mode,
 						matching:       message.matching,
-						service:        message.service
+						service:        message.service,
+						qrData:         message.qrData
 					});
 
 					this._pincodes[pincode.toString()] = {
@@ -90,7 +104,8 @@ class CodeMap {
 						socket_options: message.socket_options,
 						mode:           message.mode,
 						matching:       message.matching,
-						service:        message.service
+						service:        message.service,
+						qrData:         message.qrData
 					};
 
 					resolve(pincode);
@@ -147,7 +162,8 @@ class CodeMap {
 				socket_options: record.socket_options,
 				mode:           record.mode,
 				matching:       record.matching,
-				service:        record.service
+				service:        record.service,
+				qrData:         record.qrData
 			}
 		}
 		else {
