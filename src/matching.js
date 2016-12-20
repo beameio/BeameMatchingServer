@@ -96,8 +96,6 @@ class MatchingServer {
 	onWhispererConnection(socket) {
 		logger.debug("Socketio connection");
 
-		socket.emit('your_id');
-
 		socket.on("id_whisperer", this.onWhispererId.bind(this, socket));
 
 		socket.on('disconnect', this.onDisconnect.bind(this, socket));
@@ -105,6 +103,8 @@ class MatchingServer {
 		socket.on('create_session', this.onCreateSession.bind(this, socket));
 
 		socket.on('stop_play', this.onStopPlay.bind(this, socket));
+
+		socket.emit('your_id');
 	}
 
 	onClientConnection(socket) {
@@ -274,7 +274,7 @@ class MatchingServer {
 
 
 				//clean pincodes
-				this._map.removeSocketData(pincodeObj.sessionId, true);
+				//this._map.removeSocketData(pincodeObj.sessionId, true);
 
 			} catch (e) {
 				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
