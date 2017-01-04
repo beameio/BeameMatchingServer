@@ -6,7 +6,7 @@
 const fs          = require("fs");
 const bodyParser  = require('body-parser');
 const https       = require('https');
-const config      = require('../config/config');
+const Constants      = require('../constants');
 const express     = require('express');
 const router      = require('./router');
 const beameSDK    = require('beame-sdk');
@@ -46,7 +46,7 @@ class MatchingServer {
 	 * @param {Array.<string> | null} [whisperers]
 	 */
 	constructor(fqdn, app, whisperers) {
-		this._fqdn       = fqdn || config.MatchingServerFqdn;
+		this._fqdn       = fqdn || Constants.MatchingServerFqdn;
 		this._app        = app || setExpressApp(router, false);
 		this._matching   = new (require('./matching'))(this._fqdn);
 		this._whisperers = whisperers || [];

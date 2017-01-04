@@ -2,7 +2,6 @@
  * Created by zenit1 on 25/10/2016.
  */
 "use strict";
-const config            = require('../config/config');
 const beameSDK          = require('beame-sdk');
 const module_name       = "Matching";
 const BeameLogger       = beameSDK.Logger;
