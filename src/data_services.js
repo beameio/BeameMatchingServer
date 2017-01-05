@@ -59,23 +59,27 @@ class DataServices {
 
 	/**
 	 *
-	 * @param {Invitations} data
+	 * @param {Invitation} data
 	 * @returns {Promise}
 	 */
 	saveInvitation(data) {
 		return this._dbService.saveInvitation(data);
 	}
 
-	deleteRegistration(id) {
-		return this._dbService.deleteRegistration(id);
+	findInvitation(pin) {
+		return this._dbService.findInvitation(pin);
+	}
+
+	deleteInvitation(id) {
+		return this._dbService.deleteInvitation(id);
 	}
 
 	/**
 	 * @param id
 	 * @param {SignatureToken|String} sign
 	 */
-	updateRegistrationStatus(id, sign) {
-		return this._dbService.updateRegistrationStatus(id, sign);
+	updateInvitationStatus(id, sign) {
+		return this._dbService.updateInvitationRegistrationStatus(id, sign);
 	}
 
 	//endregion

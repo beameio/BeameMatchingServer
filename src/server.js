@@ -3,17 +3,17 @@
  */
 "use strict";
 
-const fs          = require("fs");
-const bodyParser  = require('body-parser');
-const https       = require('https');
-const Constants   = require('../constants');
-const express     = require('express');
-const Router      = require('./router');
-const beameSDK    = require('beame-sdk');
-const module_name = "MatchingServer";
-const BeameLogger = beameSDK.Logger;
-const logger      = new BeameLogger(module_name);
-
+const fs                   = require("fs");
+const bodyParser           = require('body-parser');
+const https                = require('https');
+const Constants            = require('../constants');
+const express              = require('express');
+const Router               = require('./router');
+const beameSDK             = require('beame-sdk');
+const module_name          = "MatchingServer";
+const BeameLogger          = beameSDK.Logger;
+const logger               = new BeameLogger(module_name);
+const MatchingSocketServer = require('./socket_server');
 
 /**
  *
@@ -38,6 +38,9 @@ function setExpressApp(router, useStatic, folderName) {
 	return app;
 }
 
+function nop() {
+}
+
 class MatchingServer {
 
 	/**
@@ -46,11 +49,11 @@ class MatchingServer {
 	 * @param {Array.<string> | null} [whisperers]
 	 */
 	constructor(fqdn, app, whisperers) {
-		this._fqdn       = fqdn || Constants.MatchingServerFqdn;
-		this._app        = app || setExpressApp((new Router()).router, false);
-		this._matching   = new (require('./matching'))(this._fqdn);
-		this._whisperers = whisperers || [];
-		this._server     = null;
+		this._fqdn         = fqdn || Constants.MatchingServerFqdn;
+		this._app          = app || setExpressApp((new Router()).router, false);
+		this._whisperers   = whisperers || [];
+		this._server       = null;
+		this._socketServer = null;
 	}
 
 	/**
@@ -58,7 +61,7 @@ class MatchingServer {
 	 * @param {Function|null} [cb]
 	 * @param {Boolean|null} [boot]
 	 */
-	start(cb, boot = true) {
+	start(cb = nop, boot = true) {
 
 
 		function startDataService() {
@@ -77,7 +80,6 @@ class MatchingServer {
 					const Bootstrapper = require('./bootstrapper');
 					const bootstrapper = Bootstrapper.getInstance();
 
-
 					bootstrapper.initAll().then(startDataService).then(resolve).catch(reject);
 				}
 			);
@@ -89,17 +91,18 @@ class MatchingServer {
 
 					this._server = app;
 
-					this._matching.loadWhisperersCreds(this._whisperers).then(() => {
-						this._matching.startSocketIoServer(app);
-					}).catch(() => {
-						logger.error(`no whisperers creds found`);
-						this._matching.startSocketIoServer();
+					let socketServer = new MatchingSocketServer(this._fqdn, this._server, this._whisperers);
+
+					socketServer.start().then(socketio_server => {
+						this._socketServer = socketio_server;
+						cb(null, app);
+					}).catch(error => {
+						cb(error)
 					});
 
-					cb && cb(null, app);
 				},
 				error => {
-					cb && cb(error, null);
+					cb(error);
 				});
 		};
 
@@ -112,6 +115,11 @@ class MatchingServer {
 		if (this._server) {
 			this._server.close();
 			this._server = null;
+		}
+
+		if (this._socketServer) {
+			this._socketServer.stop();
+			this._socketServer = null;
 		}
 	}
 }

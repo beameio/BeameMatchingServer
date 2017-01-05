@@ -75,6 +75,26 @@ class SqliteServices {
 		);
 	}
 
+	findInvitation(pin) {
+		return new Promise((resolve) => {
+				logger.debug(`try fetch registrations`);
+				let model = this._models.invitation;
+
+				//noinspection JSUnresolvedFunction
+				model.findOne({where: {pin: pin}}).then(record => {
+
+						resolve(record ? record.dataValues : null);
+					}
+				).catch(
+					error => {
+						logger.error(error);
+						resolve([]);
+					}
+				);
+			}
+		);
+	}
+
 	/**
 	 * @param {Invitation} data
 	 * @returns {Promise.<Invitation>}
@@ -98,38 +118,10 @@ class SqliteServices {
 		);
 	}
 
-	/**
-	 * @param {RegistrationData} data
-	 * @returns {Promise.<Registration|null>}
-	 */
-	isRegistrationExists(data) {
+
+	deleteInvitation(id) {
 		return new Promise((resolve, reject) => {
-
-				let model = this._models.invitation;
-
-				try {
-					//noinspection JSUnresolvedFunction
-					model.findOne({
-						where: {
-							email:          data.email,
-							name:           data.name,
-							externalUserId: data.user_id
-						}
-					}).then(record => {
-						resolve(record ? record.dataValues : null);
-					}).catch(onError.bind(this, reject));
-
-				}
-				catch (error) {
-					onError(reject, error)
-				}
-			}
-		);
-	}
-
-	deleteRegistration(id) {
-		return new Promise((resolve, reject) => {
-				logger.debug(`try delete registration ${id}`);
+				logger.debug(`try delete invitation ${id}`);
 				let model = this._models.invitation;
 				model.destroy({where: {id: id}}).then(resolve).catch(reject);
 			}
@@ -140,7 +132,7 @@ class SqliteServices {
 	 * @param {String} fqdn
 	 * @returns {Promise.<Registration>}
 	 */
-	markRegistrationAsCompleted(fqdn) {
+	markInvitationAsCompleted(fqdn) {
 		return new Promise((resolve, reject) => {
 				try {
 					let model = this._models.invitation;
@@ -170,82 +162,6 @@ class SqliteServices {
 		);
 	}
 
-	updateRegistrationFqdn(hash, fqdn) {
-
-	}
-
-	/**
-	 *
-	 * @param id
-	 * @param {SignatureToken|String} sign
-	 */
-	updateRegistrationHash(id, sign) {
-		return new Promise((resolve, reject) => {
-				try {
-					let registration = this._models.invitation;
-					//noinspection JSUnresolvedFunction
-					registration.findById(id).then(record => {
-						if (!record) {
-							reject(logger.formatErrorMessage(`Registration record not found`));
-							return;
-						}
-
-						var signObj = CommonUtils.parse(sign);
-
-						if (signObj == null) {
-							onError(reject, new Error(`invalid auth token`));
-							return;
-						}
-						//noinspection JSValidateTypes
-						/** @type {SignedData}*/
-						let signedData = signObj.signedData,
-						    hash       = signedData.data,
-						    valid_till = signedData.valid_till;
-
-						record.update({hash: hash, hashValidTill: valid_till}).then(regs => {
-							resolve(regs.dataValues);
-						}).catch(onError.bind(this, reject));
-
-					}).catch(onError.bind(this, reject));
-
-				}
-				catch (error) {
-					logger.error(BeameLogger.formatError(error));
-					onError(reject, error);
-				}
-			}
-		);
-	}
-
-	/**
-	 * @param {String} hash
-	 * @returns {Promise}
-	 */
-	findRegistrationRecordByHash(hash) {
-		return new Promise((resolve) => {
-				try {
-					let model = this._models.invitation;
-					//noinspection JSUnresolvedFunction
-					model.findOne({
-						where: {
-							hash: hash
-						}
-					}).then(record => {
-						resolve(record ? record.dataValues : null);
-
-					}).catch(error => {
-						logger.error(BeameLogger.formatError(error));
-						resolve(null);
-					});
-
-				}
-				catch (error) {
-					logger.error(BeameLogger.formatError(error));
-					resolve(null);
-				}
-			}
-		);
-	}
 
 	//endregion
 }

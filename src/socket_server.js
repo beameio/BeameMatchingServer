@@ -29,30 +29,55 @@ const CodeMap           = require('./code_map');
  * @property {Object.<string, WhispererAgent>} sessions
  */
 
-class MatchingServer {
+class MatchingSocketServer {
 
 	/**
 	 * @param {String} server_fqdn
-	 *
+	 * @param {Server} srv
+	 * @param {Array.<string>} [whisperers]
 	 */
-	constructor(server_fqdn) {
+	constructor(server_fqdn,srv,whisperers) {
 
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
+		this._server = srv;
+		this._whispererFqdns = whisperers;
 		this._map     = new CodeMap();
 		this._clients = {};
 		this._fqdn    = server_fqdn;
+	}
+
+	start() {
+
+		const _startSocketServer = () => {
+
+			/** @type {Socket} */
+			let socketio = require('socket.io')(this._server, {secure: true});
+
+			socketio.of('whisperer').on('connection', this._onWhispererConnection.bind(this));
+			socketio.of('whisperer').on('reconnect', this._onWhispererReconnect.bind(this));
+			socketio.of('client').on('connection', this._onClientConnection.bind(this));
+
+			this._socketioServer = socketio;
+
+			logger.info(`Socket Server started on ${this._fqdn}`);
+
+			return Promise.resolve(this._socketioServer);
+		};
+
+		return this._loadWhisperersCreds()
+			.then(_startSocketServer);
 	}
 
 	/**
 	 * @param {Array.<string> | null} [whisperers]
 	 * @returns {Promise}
 	 */
-	loadWhisperersCreds(whisperers) {
+	_loadWhisperersCreds() {
 
 		return new Promise((resolve, reject) => {
 
-				let fqdnsArray = whisperers.concat(Object.keys(config_whisperers));
+				let fqdnsArray = this._whispererFqdns.concat(Object.keys(config_whisperers));
 
 				let whisperer_fqdns = new Set(fqdnsArray);
 
@@ -83,52 +108,26 @@ class MatchingServer {
 		);
 	}
 
-	startSocketIoServer(app) {
-		/** @type {Socket} */
-		let socketio = require('socket.io')(app, {secure: true});
-
-		socketio.of('whisperer').on('connection', this.onWhispererConnection.bind(this));
-		socketio.of('whisperer').on('reconnect', this.onReconnect.bind(this));
-		socketio.of('client').on('connection', this.onClientConnection.bind(this));
-	}
-
-	onWhispererConnection(socket) {
+	//region pairing whisperer
+	_onWhispererConnection(socket) {
 		logger.debug("Socketio connection");
 
-		socket.on("id_whisperer", this.onWhispererId.bind(this, socket));
+		socket.on("id_whisperer", this._onWhispererId.bind(this, socket));
 
-		socket.on('disconnect', this.onDisconnect.bind(this, socket));
+		socket.on('disconnect', this._onWhispererDisconnect.bind(this, socket));
 
-		socket.on('create_session', this.onCreateSession.bind(this, socket));
+		socket.on('create_session', this._onWhispererCreateSession.bind(this, socket));
 
-		socket.on('stop_play', this.onStopPlay.bind(this, socket));
-
-		socket.emit('your_id');
-	}
-
-	onClientConnection(socket) {
-		logger.debug("Socketio connection");
+		socket.on('stop_play', this._onWhispererStopPlay.bind(this, socket));
 
 		socket.emit('your_id');
-
-		//socket.on('pincodeGenerated', _.bind(this.onCodeGenerated, this, socket))
-		socket.on("pincodeHeard", this.onCodeHeard.bind(this, socket));
-
-		socket.on("idmobile", this.onIdMobile.bind(this, socket));
-
-		socket.on("okToClose",function () {
-			socket.disconnect();
-		});
-
-		//socket.on('disconnect', this.onDisconnect.bind(this, socket));
-
 	}
 
 	/**
 	 * @param {Socket} socket
 	 * @param {SessionData} data
 	 */
-	onCreateSession(socket, data) {
+	_onWhispererCreateSession(socket, data) {
 		try {
 
 			logger.debug(`[${data.sessionId}] create session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].sessions).length} sessions`);
@@ -151,7 +150,7 @@ class MatchingServer {
 	 * @param {Socket} socket
 	 * @param {SessionData} data
 	 */
-	onStopPlay(socket, data) {
+	_onWhispererStopPlay(socket, data) {
 
 		logger.debug(`[${data.sessionId}] stop play received from socket ${socket.id} `);
 
@@ -164,12 +163,12 @@ class MatchingServer {
 	}
 
 	//noinspection JSMethodCanBeStatic
-	onReconnect(socket) {
+	_onWhispererReconnect(socket) {
 		logger.debug('Whisperer Socket reconnected', socket.id);
 		//TODO add logic for session_id
 	}
 
-	onDisconnect(socket) {
+	_onWhispererDisconnect(socket) {
 		logger.debug(`Whisperer Socket ${socket.id} disconnected`);
 
 		for (let key in this._whisperers) {
@@ -191,19 +190,7 @@ class MatchingServer {
 		logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
 	}
 
-	onIdMobile(socket, data) {
-
-		logger.debug(`Mobile is connected: ${socket.id}`);
-
-		this._clients[socket.id] = {
-			id:         socket.id,
-			socket:     socket,
-			clientFqdn: data._fqdn
-		};
-
-	}
-
-	onWhispererId(socket, data) {
+	_onWhispererId(socket, data) {
 
 		const _closeSocket = message => {
 			logger.error(message);
@@ -223,6 +210,38 @@ class MatchingServer {
 		}
 
 	}
+	//endregion
+
+	//region pairing client
+	_onClientConnection(socket) {
+		logger.debug("Socketio connection");
+
+		socket.emit('your_id');
+
+		//socket.on('pincodeGenerated', _.bind(this.onCodeGenerated, this, socket))
+		socket.on("pincodeHeard", this._onClientCodeHeard.bind(this, socket));
+
+		socket.on("idmobile", this._onClientIdMobile.bind(this, socket));
+
+		socket.on("okToClose",function () {
+			socket.disconnect();
+		});
+
+		//socket.on('disconnect', this.onDisconnect.bind(this, socket));
+
+	}
+
+	_onClientIdMobile(socket, data) {
+
+		logger.debug(`Mobile is connected: ${socket.id}`);
+
+		this._clients[socket.id] = {
+			id:         socket.id,
+			socket:     socket,
+			clientFqdn: data._fqdn
+		};
+
+	}
 
 	/**
 	 *
@@ -230,7 +249,7 @@ class MatchingServer {
 	 * @param {Socket} socket
 	 * @param {SignatureToken|null} [signature]
 	 */
-	createDevicePair(pincodeObj, socket, signature) {
+	_clientCreateDevicePair(pincodeObj, socket, signature) {
 
 
 		logger.debug(`Found record `, {
@@ -284,21 +303,9 @@ class MatchingServer {
 	/**
 	 *
 	 * @param {Socket} socket
-	 * @param {String} event
-	 * @param {Object|string} error
-	 * @private
-	 */
-	static _emitError(socket, event, error) {
-		logger.error(error);
-		socket.emit(event, error);
-	}
-
-	/**
-	 *
-	 * @param {Socket} socket
 	 * @param {Object} message
 	 */
-	onCodeHeard(socket, message) {
+	_onClientCodeHeard(socket, message) {
 		let pincode = null;
 
 		logger.info(`code received from mobile`, message);
@@ -328,7 +335,7 @@ class MatchingServer {
 				// 	return MatchingServer._emitError(socket, 'matching_error', `Signature Required`);
 				// }
 
-				this.createDevicePair(pincodeObj, socket, signature);
+				this._clientCreateDevicePair(pincodeObj, socket, signature);
 			} catch (e) {
 				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
 			}
@@ -365,9 +372,21 @@ class MatchingServer {
 			return MatchingServer._emitError(socket, 'matching_error', `Pincode required`);
 		}
 	}
+	//endregion
 
+	/**
+	 *
+	 * @param {Socket} socket
+	 * @param {String} event
+	 * @param {Object|string} error
+	 * @private
+	 */
+	static _emitError(socket, event, error) {
+		logger.error(error);
+		socket.emit(event, error);
+	}
 
 }
 
 
-module.exports = MatchingServer;
+module.exports = MatchingSocketServer;

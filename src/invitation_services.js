@@ -45,6 +45,15 @@ class InvitationServices {
 		);
 	}
 
+	findInvitation(pin){
+		return new Promise((resolve, reject) => {
+				dataService.findInvitation(pin).then(record=>{
+					resolve(record.token);
+				}).catch(reject);
+			}
+		);
+	}
+
 	getRequestAuthToken(req) {
 		return new Promise((resolve, reject) => {
 				let authHead  = req.get('X-BeameAuthToken'),
