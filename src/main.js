@@ -22,7 +22,7 @@ function startDataService() {
 bootstrapper.initAll()
 	.then(startDataService)
 	.then(()=>{
-	server.start();
+	server.start(null,false);
 }).catch(error=>{
 	console.error(error);
 	process.exit(1);
