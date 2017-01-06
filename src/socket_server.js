@@ -10,7 +10,9 @@ const logger            = new BeameLogger(module_name);
 const store             = new (beameSDK.BeameStore)();
 const config_whisperers = require('../config/whisperers');
 const WhispererAgent    = require('./whisperer_agent');
+const ApprovalAgent     = require('./approval_agent');
 const CodeMap           = require('./code_map');
+const ApprovalCodeMap   = require('./approval_code_map');
 
 /**
  * @typedef {Object} SessionData
@@ -36,15 +38,17 @@ class MatchingSocketServer {
 	 * @param {Server} srv
 	 * @param {Array.<string>} [whisperers]
 	 */
-	constructor(server_fqdn,srv,whisperers) {
+	constructor(server_fqdn, srv, whisperers) {
 
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
-		this._server = srv;
-		this._whispererFqdns = whisperers;
-		this._map     = new CodeMap();
-		this._clients = {};
-		this._fqdn    = server_fqdn;
+		this._server           = srv;
+		this._whispererFqdns   = whisperers;
+		this._map              = new CodeMap();
+		this._approval_map     = new ApprovalCodeMap();
+		this._clients          = {};
+		this._register_clients = {};
+		this._fqdn             = server_fqdn;
 	}
 
 	start() {
@@ -58,6 +62,9 @@ class MatchingSocketServer {
 			socketio.of('whisperer').on('reconnect', this._onWhispererReconnect.bind(this));
 			socketio.of('client').on('connection', this._onClientConnection.bind(this));
 
+			socketio.of('approve').on('connection', this._onApprovalConnection.bind(this));
+			socketio.of('register').on('connection', this._onRegisterClientConnection.bind(this));
+
 			this._socketioServer = socketio;
 
 			logger.info(`Socket Server started on ${this._fqdn}`);
@@ -69,10 +76,6 @@ class MatchingSocketServer {
 			.then(_startSocketServer);
 	}
 
-	/**
-	 * @param {Array.<string> | null} [whisperers]
-	 * @returns {Promise}
-	 */
 	_loadWhisperersCreds() {
 
 		return new Promise((resolve, reject) => {
@@ -93,7 +96,7 @@ class MatchingSocketServer {
 				whisperer_fqdns.forEach(fqdn => {
 					store.find(fqdn).then(cred => {
 
-						this._whisperers[cred.getKey("FQDN")] = {cred: cred, sessions: {}};
+						this._whisperers[cred.getKey("FQDN")] = {cred: cred, sessions: {}, approval_sessions: {}};
 
 						found++;
 						_checkCounter();
@@ -110,7 +113,7 @@ class MatchingSocketServer {
 
 	//region pairing whisperer
 	_onWhispererConnection(socket) {
-		logger.debug("Socketio connection");
+		logger.debug("Whisperer Socketio connection");
 
 		socket.on("id_whisperer", this._onWhispererId.bind(this, socket));
 
@@ -210,6 +213,7 @@ class MatchingSocketServer {
 		}
 
 	}
+
 	//endregion
 
 	//region pairing client
@@ -223,7 +227,7 @@ class MatchingSocketServer {
 
 		socket.on("idmobile", this._onClientIdMobile.bind(this, socket));
 
-		socket.on("okToClose",function () {
+		socket.on("okToClose", function () {
 			socket.disconnect();
 		});
 
@@ -263,11 +267,11 @@ class MatchingSocketServer {
 
 			try {
 				//send message to Mobile
-				if(pincodeObj.qrData && Object.keys(pincodeObj.qrData).length > 3){
+				if (pincodeObj.qrData && Object.keys(pincodeObj.qrData).length > 3) {
 					console.log('Matching to mobile: session_data');
-					this._clients[socket.id].socket.emit('session_data',JSON.stringify(pincodeObj.qrData));
+					this._clients[socket.id].socket.emit('session_data', JSON.stringify(pincodeObj.qrData));
 				}
-				else{
+				else {
 					//send message to Whisperer
 					pincodeObj.socket.emit('mobile_matched', {
 						sessionId:  pincodeObj.sessionId,
@@ -295,7 +299,7 @@ class MatchingSocketServer {
 				//this._map.removeSocketData(pincodeObj.sessionId, true);
 
 			} catch (e) {
-				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
 			}
 		});
 	}
@@ -319,25 +323,25 @@ class MatchingSocketServer {
 		const _onPinFound = (signature) => {
 			try {
 				if (!pincode) {
-					return MatchingServer._emitError(socket, 'matching_error', `Pin not found `);
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Pin not found `);
 				}
 
 				logger.debug(`onCodeHeard  ${pincode} on socketId ${socket.id}`);
 				let pincodeObj = this._map.matchPinCode(pincode);
 
 				if (!pincodeObj) {
-					return MatchingServer._emitError(socket, 'matching_error', `Pincode not found`);
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Pincode not found`);
 				}
 
 
 				//TODO Uncomment after demo
 				// if (pincodeObj.mode == config.WhispererMode.SESSION && !signature) {
-				// 	return MatchingServer._emitError(socket, 'matching_error', `Signature Required`);
+				// 	return MatchingSocketServer._emitError(socket, 'matching_error', `Signature Required`);
 				// }
 
 				this._clientCreateDevicePair(pincodeObj, socket, signature);
 			} catch (e) {
-				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
 			}
 		};
 
@@ -353,11 +357,11 @@ class MatchingSocketServer {
 
 			store.find(signature.signedBy).then(creds => {
 				if (!creds.checkSignature(signature)) {
-					return MatchingServer._emitError(socket, 'matching_error', `Client Signature by ${signature.signedBy} not valid`);
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Client Signature by ${signature.signedBy} not valid`);
 				}
 
 				if (!signature.signedData["pin"]) {
-					return MatchingServer._emitError(socket, 'matching_error', `Pin not found in signature`);
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Pin not found in signature`);
 				}
 
 				pincode = JSON.parse("[" + signature.signedData["pin"] + "]");
@@ -365,13 +369,229 @@ class MatchingSocketServer {
 				_onPinFound.call(this, CommonUtils.stringify(signature));
 
 			}).catch(error => {
-				return MatchingServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
 			});
 		}
 		else {
-			return MatchingServer._emitError(socket, 'matching_error', `Pincode required`);
+			return MatchingSocketServer._emitError(socket, 'matching_error', `Pincode required`);
 		}
 	}
+
+	//endregion
+
+	//region approval
+	_onApprovalConnection(socket) {
+		logger.debug("Approval Socketio connection");
+
+		socket.on("id_whisperer", this._onApprovalId.bind(this, socket));
+
+		socket.on('disconnect', this._onApprovalDisconnect.bind(this, socket));
+
+		socket.on('create_session', this._onApprovalCreateSession.bind(this, socket));
+
+		socket.emit('your_id');
+	}
+
+	_onApprovalId(socket, data) {
+
+		const _closeSocket = message => {
+			logger.error(message);
+			socket.disconnect();
+		};
+
+		if (!data) {
+			return _closeSocket(`data not received on onWhispererId event`);
+		}
+
+		if (!this._whisperers[data.signedBy]) {
+			return _closeSocket(`whisperer fqdn ${data.signedBy} not found`);
+		}
+
+		if (!this._whisperers[data.signedBy].cred.checkSignature(data)) {
+			return _closeSocket(`whisperer ${data.signedBy} signature not valid`);
+		}
+
+	}
+
+	/**
+	 * @param {Socket} socket
+	 * @param {SessionData} data
+	 */
+	_onApprovalCreateSession(socket, data) {
+		try {
+
+			logger.debug(`[${data.sessionId}] create approval session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].approval_sessions).length} sessions`);
+
+			let agent = new ApprovalAgent(socket, this._approval_map, data);
+
+			this._whisperers[data.whispererFqdn].approval_sessions[data.sessionId] = agent;
+
+			logger.debug(`[${data.sessionId}] sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].approval_sessions).length} sessions`);
+
+			agent.setQrDataListener();
+		}
+		catch (error) {
+			logger.error(error.message);
+		}
+	}
+
+	_onApprovalDisconnect(socket) {
+		logger.debug(`Whisperer Socket ${socket.id} disconnected`);
+
+		for (let key in this._whisperers) {
+			//noinspection JSUnfilteredForInLoop
+			for (let id in this._whisperers[key].approval_sessions) {
+				//noinspection JSUnfilteredForInLoop
+				if (this._whisperers[key].approval_sessions[id].socketId == socket.id) {
+					//noinspection JSUnfilteredForInLoop
+					logger.debug(`[${this._whisperers[key].approval_sessions[id].sessionId}] disconnecting`);
+					//noinspection JSUnfilteredForInLoop
+					this._whisperers[key].approval_sessions[id].disconnect();
+					//noinspection JSUnfilteredForInLoop
+					delete this._whisperers[key].approval_sessions[id];
+					return;
+				}
+			}
+		}
+
+		logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
+	}
+
+	//endregion
+
+	//region register client
+	_onRegisterClientConnection(socket) {
+		logger.debug("Register Socketio connection");
+
+		socket.emit('your_id');
+
+		socket.on("pincode", this._onRegisterClientPincode.bind(this, socket));
+
+		socket.on("idmobile", this._onRegisterClientIdMobile.bind(this, socket));
+
+		socket.on("okToClose", () => {
+			socket.disconnect();
+		});
+
+
+	}
+
+	_registerClientCreateDevicePair(pincodeObj, socket, token) {
+
+		socket.removeAllListeners("pincode");
+
+		process.nextTick(() => {
+
+			try {
+				//send message to Mobile
+				if (pincodeObj.qrData && Object.keys(pincodeObj.qrData).length > 3) {
+					console.log('Matching to mobile: session_data');
+					this._register_clients[socket.id].socket.emit('session_data', JSON.stringify(pincodeObj.qrData));
+				}
+				else {
+					//send message to Whisperer
+					pincodeObj.socket.emit('mobile_matched', {
+						sessionId:  pincodeObj.sessionId,
+						clientFqdn: this._register_clients[socket.id] ? this._register_clients[socket.id].clientFqdn : null,
+						token:  token
+					});
+
+					this._register_clients[socket.id].socket.emit('start-session', {
+						sessionId:      pincodeObj.sessionId
+					});
+				}
+
+				if (this._register_clients[socket.id]) {
+
+					this._register_clients[socket.id].socket.on('disconnect', () => {
+						delete this._register_clients[socket.id];
+					});
+				}
+
+
+				//clean pincodes
+				//this._map.removeSocketData(pincodeObj.sessionId, true);
+
+			} catch (e) {
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
+			}
+		});
+	}
+
+	_onRegisterClientPincode(socket, message) {
+		let pincode = null;
+
+		logger.info(`register pincode received from mobile`, message);
+
+		/**
+		 *
+		 * @param {SignatureToken} [signature]
+		 * @returns {*}
+		 * @private
+		 */
+		const _onPinFound = (signature) => {
+			try {
+				if (!pincode) {
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Pin not found `);
+				}
+
+				logger.debug(`on register pin  ${pincode} on socketId ${socket.id}`);
+
+				this._approval_map.matchPinCode(pincode).then(pincodeObj => {
+					this._registerClientCreateDevicePair(pincodeObj, socket, signature);
+				}).catch(error => {
+					MatchingSocketServer._emitError(socket, 'matching_error', error);
+				});
+
+			} catch (e) {
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(e));
+			}
+		};
+
+		//noinspection JSUnresolvedVariable
+		if (message.pin) {
+			//noinspection JSUnresolvedVariable
+			pincode = JSON.parse("[" + message.pin + "]");
+			_onPinFound();
+		}
+		else if (message.sign) {
+
+			let signature = CommonUtils.parse(message.sign);
+
+			store.find(signature.signedBy).then(creds => {
+				if (!creds.checkSignature(signature)) {
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Client Signature by ${signature.signedBy} not valid`);
+				}
+
+				if (!signature.signedData["pin"]) {
+					return MatchingSocketServer._emitError(socket, 'matching_error', `Pin not found in signature`);
+				}
+
+				pincode = JSON.parse("[" + signature.signedData["pin"] + "]");
+
+				_onPinFound.call(this, CommonUtils.stringify(signature));
+
+			}).catch(error => {
+				return MatchingSocketServer._emitError(socket, 'matching_error', BeameLogger.formatError(error));
+			});
+		}
+		else {
+			return MatchingSocketServer._emitError(socket, 'matching_error', `Pincode required`);
+		}
+	}
+
+	_onRegisterClientIdMobile(socket, data) {
+
+		logger.debug(`Mobile is connected: ${socket.id}`);
+
+		this._register_clients[socket.id] = {
+			id:         socket.id,
+			socket:     socket,
+			clientFqdn: data._fqdn
+		};
+
+	}
+
 	//endregion
 
 	/**
