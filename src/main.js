@@ -22,7 +22,9 @@ function startDataService() {
 bootstrapper.initAll()
 	.then(startDataService)
 	.then(()=>{
-	server.start(null,false);
+	server.start(()=>{
+		console.log(`Matching started`)
+	},false);
 }).catch(error=>{
 	console.error(error);
 	process.exit(1);

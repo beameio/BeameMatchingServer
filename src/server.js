@@ -14,6 +14,7 @@ const module_name          = "MatchingServer";
 const BeameLogger          = beameSDK.Logger;
 const logger               = new BeameLogger(module_name);
 const MatchingSocketServer = require('./socket_server');
+const ClientManager        = require('./client_manager');
 
 /**
  *
@@ -80,9 +81,26 @@ class MatchingServer {
 					const Bootstrapper = require('./bootstrapper');
 					const bootstrapper = Bootstrapper.getInstance();
 
-					bootstrapper.initAll().then(startDataService).then(resolve).catch(reject);
+					bootstrapper.initAll()
+								.then(startDataService)
+								.then(resolve)
+								.catch(reject);
 				}
 			);
+		};
+
+		const initClientManager = () =>{
+
+			const clientManager = ClientManager.getInstance();
+
+			return new Promise((resolve, reject) => {
+					clientManager.init()
+						.then(clientManager.addClients.bind(clientManager,this._whisperers))
+						.then(resolve)
+						.catch(reject);
+				}
+			);
+
 		};
 
 		const startServer = () => {
@@ -91,7 +109,7 @@ class MatchingServer {
 
 					this._server = app;
 
-					let socketServer = new MatchingSocketServer(this._fqdn, this._server, this._whisperers);
+					let socketServer = new MatchingSocketServer(this._fqdn, this._server);
 
 					socketServer.start().then(socketio_server => {
 						this._socketServer = socketio_server;
@@ -106,7 +124,14 @@ class MatchingServer {
 				});
 		};
 
-		init().then(startServer);
+		init()
+			.then(initClientManager)
+			.then(startServer)
+			.catch(error=>{
+				logger.error(`Matching server failure ${BeameLogger.formatError(error)}`);
+				console.error(error.stack)
+				cb(error);
+			});
 
 	}
 

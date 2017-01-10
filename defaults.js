@@ -46,9 +46,13 @@ const ConfigProps = {
 	}
 };
 
+const ClientServersTemplate = {
+	"Servers": []
+};
+
 module.exports = {
 	ConfigProps,
-
+	ClientServersTemplate,
 	SqliteConfigTemplate,
 
 	db_provider,

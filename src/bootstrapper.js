@@ -25,6 +25,11 @@ const AppConfigJsonPath    = Constants.AppConfigJsonPath;
 const SqliteConfigJsonPath = Constants.SqliteConfigJsonPath;
 const BeameRootPath        = Constants.BeameRootPath;
 
+const CredsFolderPath     = Constants.CredsFolderPath;
+const ClientCredsJsonPath = Constants.ClientCredsJsonPath;
+const ClientCredsFileName = Constants.ClientCredsFileName;
+
+
 const SqliteDbConfigFileName = Constants.SqliteDbConfigFileName;
 
 
@@ -39,8 +44,8 @@ let bootstrapperInstance;
 class Bootstrapper {
 
 	constructor() {
-		let config   = DirectoryServices.readJSON(AppConfigJsonPath);
-		this._config = CommonUtils.isObjectEmpty(config) ? null : config;
+		let config            = DirectoryServices.readJSON(AppConfigJsonPath);
+		this._config          = CommonUtils.isObjectEmpty(config) ? null : config;
 		this._sequilizeBinary = CommonUtils.getSequelizeBinaryPath();
 	}
 
@@ -69,6 +74,7 @@ class Bootstrapper {
 		return new Promise((resolve) => {
 				Bootstrapper._ensureBeameServerDir()
 					.then(this._ensureAppConfigJson.bind(this))
+					.then(this._ensureClientServersJson.bind(this))
 					.then(this._ensureDbConfig.bind(this))
 					.then(() => {
 						logger.info(`Beame-insta-server config files ensured`);
@@ -221,6 +227,90 @@ class Bootstrapper {
 
 	//endregion
 
+	// region Clients servers config
+	registerClientServer(fqdn) {
+		return new Promise((resolve, reject) => {
+				if (!fqdn) {
+					reject(`fqdn required`);
+					return;
+				}
+
+				let servers = DirectoryServices.readJSON(ClientCredsJsonPath);
+
+				if (CommonUtils.isObjectEmpty(servers)) {
+					reject(`client servers configuration file not found`);
+					return;
+				}
+
+				if (servers.Servers.indexOf(fqdn) >= 0) {
+					resolve();
+					return;
+				}
+
+				servers.Servers.push(fqdn);
+
+
+				DirectoryServices.saveFileSync(ClientCredsJsonPath, CommonUtils.stringify(servers, true), (error) => {
+					if (error) {
+						reject(error);
+						return;
+					}
+					logger.info(`${fqdn} added to clients servers...`);
+					resolve();
+				});
+
+			}
+		);
+	}
+
+	static listClientServers() {
+		return new Promise((resolve) => {
+			resolve(DirectoryServices.readJSON(ClientCredsJsonPath).Servers);
+		});
+	}
+
+	/**
+	 * @returns {Promise}
+	 * @private
+	 */
+	_ensureClientServersJson() {
+		return new Promise((resolve) => {
+				logger.debug(`ensuring ${ClientCredsFileName}...`);
+
+				let isExists = DirectoryServices.doesPathExists(ClientCredsJsonPath);
+
+				if (isExists) {
+					logger.debug(`${ClientCredsFileName} found...`);
+					resolve();
+				}
+				else {
+					this._createClientServersJson().then(resolve).catch(_onConfigError);
+				}
+			}
+		);
+	}
+
+	/**
+	 ** @returns {Promise}
+	 * @private
+	 */
+	_createClientServersJson() {
+
+		return new Promise((resolve, reject) => {
+				let credsConfig = defaults.ClientServersTemplate;
+
+
+				dirServices.saveFileAsync(ClientCredsJsonPath, CommonUtils.stringify(credsConfig, true)).then(() => {
+					logger.debug(`${ClientCredsFileName} saved in ${path.dirname(ClientCredsJsonPath)}...`);
+					resolve();
+				}).catch(reject);
+
+			}
+		);
+	}
+
+	//endregion
+
 	//region Db services
 	//region config
 	_ensureDbConfig() {
@@ -321,7 +411,7 @@ class Bootstrapper {
 
 		return new Promise((resolve, reject) => {
 				//TODO implement https://github.com/sequelize/umzug
-				let args   = ["db:migrate", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
+				let args = ["db:migrate", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
 
 				try {
 					execFile(this._sequilizeBinary, args, (error) => {
@@ -345,7 +435,7 @@ class Bootstrapper {
 		logger.debug(`running sqlite seeders...`);
 
 		return new Promise((resolve, reject) => {
-				let args   = ["db:seed:all", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
+				let args = ["db:seed:all", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
 
 				try {
 					execFile(this._sequilizeBinary, args, (error) => {
@@ -377,7 +467,11 @@ class Bootstrapper {
 	static _ensureBeameServerDir() {
 
 		return new Promise((resolve, reject) => {
-				Bootstrapper._ensureDir(BeameRootPath).then(Bootstrapper._ensureDir(ConfigFolderPath)).then(resolve).catch(reject);
+				Bootstrapper._ensureDir(BeameRootPath)
+					.then(Bootstrapper._ensureDir(ConfigFolderPath))
+					.then(Bootstrapper._ensureDir(CredsFolderPath))
+					.then(resolve)
+					.catch(reject);
 			}
 		);
 
@@ -435,6 +529,7 @@ class Bootstrapper {
 		return config[env];
 	}
 
+	//noinspection JSUnusedGlobalSymbols
 	get appConfig() {
 		return this._config;
 	}

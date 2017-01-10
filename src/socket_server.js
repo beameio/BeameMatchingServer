@@ -2,17 +2,17 @@
  * Created by zenit1 on 25/10/2016.
  */
 "use strict";
-const beameSDK          = require('beame-sdk');
-const module_name       = "Matching";
-const BeameLogger       = beameSDK.Logger;
-const CommonUtils       = beameSDK.CommonUtils;
-const logger            = new BeameLogger(module_name);
-const store             = new (beameSDK.BeameStore)();
-const config_whisperers = require('../config/whisperers');
-const WhispererAgent    = require('./whisperer_agent');
-const ApprovalAgent     = require('./approval_agent');
-const CodeMap           = require('./code_map');
-const ApprovalCodeMap   = require('./approval_code_map');
+const beameSDK        = require('beame-sdk');
+const module_name     = "Matching";
+const BeameLogger     = beameSDK.Logger;
+const CommonUtils     = beameSDK.CommonUtils;
+const logger          = new BeameLogger(module_name);
+const store           = new (beameSDK.BeameStore)();
+const WhispererAgent  = require('./whisperer_agent');
+const ApprovalAgent   = require('./approval_agent');
+const CodeMap         = require('./code_map');
+const ApprovalCodeMap = require('./approval_code_map');
+const ClientManager   = require('./client_manager');
 
 /**
  * @typedef {Object} SessionData
@@ -36,19 +36,18 @@ class MatchingSocketServer {
 	/**
 	 * @param {String} server_fqdn
 	 * @param {Server} srv
-	 * @param {Array.<string>} [whisperers]
 	 */
-	constructor(server_fqdn, srv, whisperers) {
+	constructor(server_fqdn, srv) {
 
 		/**  @type {Object.<string, Whisperer>} */
 		this._whisperers = {};
 		this._server           = srv;
-		this._whispererFqdns   = whisperers;
 		this._map              = new CodeMap();
 		this._approval_map     = new ApprovalCodeMap();
 		this._clients          = {};
 		this._register_clients = {};
 		this._fqdn             = server_fqdn;
+		this._clientManager    = ClientManager.getInstance();
 	}
 
 	start() {
@@ -76,11 +75,12 @@ class MatchingSocketServer {
 			.then(_startSocketServer);
 	}
 
+
 	_loadWhisperersCreds() {
 
 		return new Promise((resolve, reject) => {
 
-				let fqdnsArray = this._whispererFqdns.concat(Object.keys(config_whisperers));
+				let fqdnsArray = this._clientManager.clients;
 
 				let whisperer_fqdns = new Set(fqdnsArray);
 
@@ -493,11 +493,11 @@ class MatchingSocketServer {
 					pincodeObj.socket.emit('mobile_matched', {
 						sessionId:  pincodeObj.sessionId,
 						clientFqdn: this._register_clients[socket.id] ? this._register_clients[socket.id].clientFqdn : null,
-						token:  token
+						token:      token
 					});
 
 					this._register_clients[socket.id].socket.emit('start-session', {
-						sessionId:      pincodeObj.sessionId
+						sessionId: pincodeObj.sessionId
 					});
 				}
 
