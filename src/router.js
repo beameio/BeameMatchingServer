@@ -54,7 +54,17 @@ class MatchingRouter {
 
 			this._authServices.getRequestAuthToken(req).then(() => {
 				clientManager.addClients([fqdn]).then(() => {
-					res.status(200).json({success: true});
+
+					const socketServer = (require('./socket_server')).getInstance();
+
+					socketServer.addClient(fqdn)
+						.then(()=>{
+							res.status(200).json({success: true});
+						}).catch(error=>{
+							res.status(500).json({success: false, error: BeameLogger.formatError(error)});
+					});
+
+
 				}).catch(error => {
 					res.status(500).json({success: false, error: BeameLogger.formatError(error)});
 				});

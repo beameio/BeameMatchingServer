@@ -31,6 +31,8 @@ const ClientManager   = require('./client_manager');
  * @property {Object.<string, WhispererAgent>} sessions
  */
 
+let matchingSocketServer;
+
 class MatchingSocketServer {
 
 	/**
@@ -48,6 +50,8 @@ class MatchingSocketServer {
 		this._register_clients = {};
 		this._fqdn             = server_fqdn;
 		this._clientManager    = ClientManager.getInstance();
+
+		matchingSocketServer = this;
 	}
 
 	start() {
@@ -72,9 +76,31 @@ class MatchingSocketServer {
 		};
 
 		return this._loadWhisperersCreds()
-			.then(_startSocketServer);
+			.then(_startSocketServer.bind(this));
 	}
 
+
+	addClient(fqdn) {
+		return new Promise((resolve, reject) => {
+
+				if (this._whisperers[fqdn]) {
+					resolve();
+				}
+
+				store.find(fqdn).then(cred => {
+
+					this._whisperers[fqdn] = {cred: cred, sessions: {}, approval_sessions: {}};
+
+					logger.info(`${fqdn}client added to matching socketio server`);
+
+					resolve();
+				}).catch(error => {
+					logger.error(error);
+					reject(error);
+				})
+			}
+		);
+	}
 
 	_loadWhisperersCreds() {
 
@@ -85,6 +111,12 @@ class MatchingSocketServer {
 				let whisperer_fqdns = new Set(fqdnsArray);
 
 				const total             = whisperer_fqdns.size;
+
+				if(total == 0){
+					resolve();
+					return;
+				}
+
 				let found = 0, notfound = 0;
 
 				const _checkCounter = () => {
@@ -94,17 +126,17 @@ class MatchingSocketServer {
 				};
 
 				whisperer_fqdns.forEach(fqdn => {
-					store.find(fqdn).then(cred => {
 
-						this._whisperers[cred.getKey("FQDN")] = {cred: cred, sessions: {}, approval_sessions: {}};
+					this.addClient(fqdn)
+						.then(() => {
+							found++;
+							_checkCounter();
+						})
+						.catch(() => {
+							notfound++;
+							_checkCounter();
 
-						found++;
-						_checkCounter();
-					}).catch(error => {
-						logger.error(error);
-						notfound++;
-						_checkCounter();
-					})
+						})
 				});
 
 			}
@@ -607,7 +639,14 @@ class MatchingSocketServer {
 		socket.emit(event, error);
 	}
 
-}
+	/**
+	 * @returns {MatchingSocketServer}
+	 */
+	static getInstance() {
 
+		return matchingSocketServer;
+	}
+
+}
 
 module.exports = MatchingSocketServer;

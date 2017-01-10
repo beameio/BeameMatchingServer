@@ -125,11 +125,10 @@ class MatchingServer {
 		};
 
 		init()
-			.then(initClientManager)
-			.then(startServer)
+			.then(initClientManager.bind(this))
+			.then(startServer.bind(this))
 			.catch(error=>{
 				logger.error(`Matching server failure ${BeameLogger.formatError(error)}`);
-				console.error(error.stack)
 				cb(error);
 			});
 
