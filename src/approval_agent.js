@@ -45,7 +45,7 @@ class ApprovalAgent {
 	setQrDataListener() {
 		if (this._socket) {
 			this._socket.on('qrData', (data) => {
-				logger.log('Approval got QR data:', data);
+				logger.debug('Approval got QR data:', data);
 				let qrData = JSON.parse(data);
 
 				if (!qrData.pin) {
