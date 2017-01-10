@@ -11,7 +11,7 @@ const InvitationServices = require('./invitation_services');
 class ApprovalAgent {
 	/**
 	 * @param {Socket} socket
-	 * @param {ApprovalCodeMap} codeMap
+	 * @param {CodeMap} codeMap
 	 * @param {SessionData} data
 	 */
 	constructor(socket, codeMap, data) {
@@ -70,6 +70,7 @@ class ApprovalAgent {
 					.then(_onPinMatched.bind(this))
 					.catch(_onPinMatchFailed.bind(this));
 			});
+			this._socket.emit('requestQrData');
 		}
 	}
 

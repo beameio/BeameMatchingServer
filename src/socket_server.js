@@ -383,51 +383,51 @@ class MatchingSocketServer {
 	_onApprovalConnection(socket) {
 		logger.debug("Approval Socketio connection");
 
-		socket.on("id_whisperer", this._onApprovalId.bind(this, socket));
+		socket.on("id_approver", this._onWhispererId.bind(this, socket));
 
-		socket.on('disconnect', this._onApprovalDisconnect.bind(this, socket));
+		socket.on('disconnect', this._onWhispererDisconnect.bind(this, socket));
 
 		socket.on('create_session', this._onApprovalCreateSession.bind(this, socket));
 
 		socket.emit('your_id');
 	}
 
-	_onApprovalId(socket, data) {
-
-		const _closeSocket = message => {
-			logger.error(message);
-			socket.disconnect();
-		};
-
-		if (!data) {
-			return _closeSocket(`data not received on onWhispererId event`);
-		}
-
-		if (!this._whisperers[data.signedBy]) {
-			return _closeSocket(`whisperer fqdn ${data.signedBy} not found`);
-		}
-
-		if (!this._whisperers[data.signedBy].cred.checkSignature(data)) {
-			return _closeSocket(`whisperer ${data.signedBy} signature not valid`);
-		}
-
-	}
+	// _onApprovalId(socket, data) {
+	//
+	// 	const _closeSocket = message => {
+	// 		logger.error(message);
+	// 		socket.disconnect();
+	// 	};
+	//
+	// 	if (!data) {
+	// 		return _closeSocket(`data not received on onApproverId event`);
+	// 	}
+	//
+	// 	if (!this._whisperers[data.signedBy]) {
+	// 		return _closeSocket(`Approver fqdn ${data.signedBy} not found`);
+	// 	}
+	//
+	// 	if (!this._whisperers[data.signedBy].cred.checkSignature(data)) {
+	// 		return _closeSocket(`whisperer ${data.signedBy} signature not valid`);
+	// 	}
+	//
+	// }
 
 	/**
 	 * @param {Socket} socket
 	 * @param {SessionData} data
 	 */
 	_onApprovalCreateSession(socket, data) {
+
 		try {
 
-			logger.debug(`[${data.sessionId}] create approval session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.whispererFqdn].approval_sessions).length} sessions`);
+			logger.debug(`[${data.sessionId}] create session for socket ${socket.id} , current total ${Object.keys(this._whisperers[data.approverFqdn].sessions).length} sessions`);
 
 			let agent = new ApprovalAgent(socket, this._approval_map, data);
 
-			this._whisperers[data.whispererFqdn].approval_sessions[data.sessionId] = agent;
+			this._whisperers[data.approverFqdn].sessions[data.sessionId] = agent;
 
-			logger.debug(`[${data.sessionId}] sessions saved , current total ${Object.keys(this._whisperers[data.whispererFqdn].approval_sessions).length} sessions`);
-
+			logger.debug(`[${data.sessionId}] sessions saved , current total ${Object.keys(this._whisperers[data.approverFqdn].sessions).length} sessions`);
 			agent.setQrDataListener();
 		}
 		catch (error) {
@@ -435,27 +435,27 @@ class MatchingSocketServer {
 		}
 	}
 
-	_onApprovalDisconnect(socket) {
-		logger.debug(`Whisperer Socket ${socket.id} disconnected`);
-
-		for (let key in this._whisperers) {
-			//noinspection JSUnfilteredForInLoop
-			for (let id in this._whisperers[key].approval_sessions) {
-				//noinspection JSUnfilteredForInLoop
-				if (this._whisperers[key].approval_sessions[id].socketId == socket.id) {
-					//noinspection JSUnfilteredForInLoop
-					logger.debug(`[${this._whisperers[key].approval_sessions[id].sessionId}] disconnecting`);
-					//noinspection JSUnfilteredForInLoop
-					this._whisperers[key].approval_sessions[id].disconnect();
-					//noinspection JSUnfilteredForInLoop
-					delete this._whisperers[key].approval_sessions[id];
-					return;
-				}
-			}
-		}
-
-		logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
-	}
+	// _onApprovalDisconnect(socket) {
+	// 	logger.debug(`Whisperer Socket ${socket.id} disconnected`);
+	//
+	// 	for (let key in this._whisperers) {
+	// 		//noinspection JSUnfilteredForInLoop
+	// 		for (let id in this._whisperers[key].approval_sessions) {
+	// 			//noinspection JSUnfilteredForInLoop
+	// 			if (this._whisperers[key].approval_sessions[id].socketId == socket.id) {
+	// 				//noinspection JSUnfilteredForInLoop
+	// 				logger.debug(`[${this._whisperers[key].approval_sessions[id].sessionId}] disconnecting`);
+	// 				//noinspection JSUnfilteredForInLoop
+	// 				this._whisperers[key].approval_sessions[id].disconnect();
+	// 				//noinspection JSUnfilteredForInLoop
+	// 				delete this._whisperers[key].approval_sessions[id];
+	// 				return;
+	// 			}
+	// 		}
+	// 	}
+	//
+	// 	logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
+	// }
 
 	//endregion
 
@@ -484,9 +484,10 @@ class MatchingSocketServer {
 
 			try {
 				//send message to Mobile
-				if (pincodeObj.qrData && Object.keys(pincodeObj.qrData).length > 3) {
+				if (pincodeObj.qrData && pincodeObj.token && Object.keys(pincodeObj.qrData).length > 3) {
 					console.log('Matching to mobile: session_data');
-					this._register_clients[socket.id].socket.emit('session_data', JSON.stringify(pincodeObj.qrData));
+					let mobileData = JSON.stringify({qrData: pincodeObj.qrData, token: pincodeObj.token});
+					this._register_clients[socket.id].socket.emit('session_data', mobileData);
 				}
 				else {
 					//send message to Whisperer
@@ -551,7 +552,7 @@ class MatchingSocketServer {
 		//noinspection JSUnresolvedVariable
 		if (message.pin) {
 			//noinspection JSUnresolvedVariable
-			pincode = JSON.parse("[" + message.pin + "]");
+			pincode = message.pin;
 			_onPinFound();
 		}
 		else if (message.sign) {

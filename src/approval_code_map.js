@@ -46,12 +46,17 @@ class ApprovalCodeMap {
 
 		return new Promise((resolve, reject) => {
 
-				const _onPinMatched = () => {
+				const _onPinMatched = (data) => {
 
-					let record = this._pincodes[pincode];
-
-					record ? resolve(record) : reject(`Approval session not found`);
-
+					// let record = data;
+					var found = this._pincodes[pincode];
+					if(found && data){
+						found.token = data;
+						resolve(found);
+					}
+					else{
+						reject(`Approval session not found`);
+					}
 				};
 
 				const _onPinMatchFailed = error => {
@@ -60,7 +65,7 @@ class ApprovalCodeMap {
 				};
 
 				this._invitationServices.findInvitation(pincode)
-					.then(_onPinMatched.bind(this))
+					.then((data)=>{_onPinMatched(data)})
 					.catch(_onPinMatchFailed.bind(this));
 			}
 		);
