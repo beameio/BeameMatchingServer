@@ -424,26 +424,6 @@ class MatchingSocketServer {
 		socket.emit('your_id');
 	}
 
-	// _onApprovalId(socket, data) {
-	//
-	// 	const _closeSocket = message => {
-	// 		logger.error(message);
-	// 		socket.disconnect();
-	// 	};
-	//
-	// 	if (!data) {
-	// 		return _closeSocket(`data not received on onApproverId event`);
-	// 	}
-	//
-	// 	if (!this._whisperers[data.signedBy]) {
-	// 		return _closeSocket(`Approver fqdn ${data.signedBy} not found`);
-	// 	}
-	//
-	// 	if (!this._whisperers[data.signedBy].cred.checkSignature(data)) {
-	// 		return _closeSocket(`whisperer ${data.signedBy} signature not valid`);
-	// 	}
-	//
-	// }
 
 	/**
 	 * @param {Socket} socket
@@ -467,27 +447,6 @@ class MatchingSocketServer {
 		}
 	}
 
-	// _onApprovalDisconnect(socket) {
-	// 	logger.debug(`Whisperer Socket ${socket.id} disconnected`);
-	//
-	// 	for (let key in this._whisperers) {
-	// 		//noinspection JSUnfilteredForInLoop
-	// 		for (let id in this._whisperers[key].approval_sessions) {
-	// 			//noinspection JSUnfilteredForInLoop
-	// 			if (this._whisperers[key].approval_sessions[id].socketId == socket.id) {
-	// 				//noinspection JSUnfilteredForInLoop
-	// 				logger.debug(`[${this._whisperers[key].approval_sessions[id].sessionId}] disconnecting`);
-	// 				//noinspection JSUnfilteredForInLoop
-	// 				this._whisperers[key].approval_sessions[id].disconnect();
-	// 				//noinspection JSUnfilteredForInLoop
-	// 				delete this._whisperers[key].approval_sessions[id];
-	// 				return;
-	// 			}
-	// 		}
-	// 	}
-	//
-	// 	logger.debug(`Whisperer Socket ${socket.id} disconnected, session not found`);
-	// }
 
 	//endregion
 
@@ -516,22 +475,16 @@ class MatchingSocketServer {
 
 			try {
 				//send message to Mobile
-				if (pincodeObj.qrData && pincodeObj.token && Object.keys(pincodeObj.qrData).length > 3) {
+				if(!pincodeObj.qrData)
+					pincodeObj.qrData = {'imageRequired':false,'TIME':Math.round(Date.now() / 1000)};//TODO verify if mobile can get here when no qrData checked
+				if (pincodeObj.token) {
 					console.log('Matching to mobile: session_data');
 					let mobileData = JSON.stringify({qrData: pincodeObj.qrData, token: pincodeObj.token});
 					this._register_clients[socket.id].socket.emit('session_data', mobileData);
 				}
 				else {
 					//send message to Whisperer
-					pincodeObj.socket.emit('mobile_matched', {
-						sessionId:  pincodeObj.sessionId,
-						clientFqdn: this._register_clients[socket.id] ? this._register_clients[socket.id].clientFqdn : null,
-						token:      token
-					});
-
-					this._register_clients[socket.id].socket.emit('start-session', {
-						sessionId: pincodeObj.sessionId
-					});
+					return MatchingSocketServer._emitError(socket, 'matching_error', 'Invalid registration data, re-enroll');
 				}
 
 				if (this._register_clients[socket.id]) {

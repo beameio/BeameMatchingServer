@@ -49,8 +49,8 @@ class ApprovalCodeMap {
 				const _onPinMatched = (data) => {
 
 					// let record = data;
-					var found = this._pincodes[pincode];
-					if(found && data){
+					var found = (this._pincodes[pincode])?this._pincodes[pincode]:{};
+					if(data){//TODO recovery if no qrData but mobile got cert (and userImage required)
 						found.token = data;
 						resolve(found);
 					}
