@@ -21,7 +21,7 @@ build:
 	$(CHRONIC) npm install
 	$(CHRONIC) npm shrinkwrap
 	mkdir -p build
-	$(CHRONIC) rsync -aP --delete --include={'/src/***','/node_modules/***','/config/***','/package.json'} --exclude='*'   ./ ./build/$(BUILD_NUMBER)/
+	$(CHRONIC) rsync -aP --delete --include={'/src/***','/models/***','/migrations/***','/seeders/***','/node_modules/***','/config/***','/package.json','/defaults.js','/constants.js','/index.js'} --exclude='*'   ./ ./build/$(BUILD_NUMBER)/
 	jq '.build={buildNumber: $(BUILD_NUMBER), commit:"$(GIT_COMMIT)", branch:"$(GIT_BRANCH)", job:"$(JOB_NAME)"}' build/$(BUILD_NUMBER)/package.json >build/$(BUILD_NUMBER)/package.json.new
 	mv build/$(BUILD_NUMBER)/package.json.new build/$(BUILD_NUMBER)/package.json
 	rm build/*.tar.gz || true

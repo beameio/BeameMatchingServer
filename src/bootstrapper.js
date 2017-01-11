@@ -390,7 +390,7 @@ class Bootstrapper {
 
 				dbConfig[env]["username"] = this._config[SqliteProps.AdminUserName];
 				dbConfig[env]["password"] = CommonUtils.randomPassword(12);
-				dbConfig[env]["storage"]  = path.join(process.env.BEAME_SERVERS_AUTH_DATA_DIR || this._config[SqliteProps.StorageRoot], this._config[SqliteProps.DbName]);
+				dbConfig[env]["storage"]  = path.join(process.env.BEAME_MATCHING_DATA_DIR || this._config[SqliteProps.StorageRoot], this._config[SqliteProps.DbName]);
 
 				dirServices.saveFileAsync(SqliteConfigJsonPath, CommonUtils.stringify(dbConfig, true)).then(() => {
 					logger.debug(`${SqliteDbConfigFileName} saved in ${path.dirname(SqliteConfigJsonPath)}...`);
