@@ -31,7 +31,7 @@ class InvitationServices {
 				};
 
 				dataService.saveInvitation(invitation).then(record => {
-						resolve({pin:record.pin});
+						resolve({pin:record.pin,id:record.id});
 					}
 				).catch(error => {
 					logger.error(BeameLogger.formatError(error));
