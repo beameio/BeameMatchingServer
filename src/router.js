@@ -23,8 +23,6 @@ function onRequestError(res, error, code) {
 class MatchingRouter {
 	constructor() {
 
-		this._invitationServices = InvitationServices.getInstance();
-
 		this._authServices = new(require('./auth_services'))();
 
 		this._router = express.Router();
@@ -36,7 +34,10 @@ class MatchingRouter {
 		this._router.post('/v1/invitation/save', (req, res) => {
 
 			this._authServices.getRequestAuthToken(req).then(() => {
-				this._invitationServices.saveInvitation(req.body).then(data => {
+
+				const invitationServices = InvitationServices.getInstance();
+
+				invitationServices.saveInvitation(req.body).then(data => {
 					res.json({success: true, data});
 				}).catch(error => {
 					res.json({success: false, error: BeameLogger.formatError(error)});
