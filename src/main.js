@@ -10,7 +10,6 @@ const MatchingServer = require('./server');
 
 /** @type {DataServices} */
 let dataService = null;
-let server = new MatchingServer();
 
 function startDataService() {
 	dataService = require('../src/data_services').getInstance();
@@ -22,6 +21,7 @@ function startDataService() {
 bootstrapper.initAll()
 	.then(startDataService)
 	.then(()=>{
+	let server = new MatchingServer();
 	server.start(()=>{
 		console.log(`Matching started`)
 	},false);
