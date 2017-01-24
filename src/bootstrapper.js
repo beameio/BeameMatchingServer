@@ -3,7 +3,6 @@
  */
 "use strict";
 const path     = require('path');
-const execFile = require('child_process').execFile;
 
 const defaults      = require('../defaults');
 const SqliteProps   = defaults.ConfigProps.Sqlite;
@@ -46,7 +45,6 @@ class Bootstrapper {
 	constructor() {
 		let config            = DirectoryServices.readJSON(AppConfigJsonPath);
 		this._config          = CommonUtils.isObjectEmpty(config) ? null : config;
-		this._sequilizeBinary = CommonUtils.getSequelizeBinaryPath();
 	}
 
 	/**
@@ -429,7 +427,7 @@ class Bootstrapper {
 		return new Promise((resolve, reject) => {
 				let args = ["db:seed:all", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
 				
-				CommonUtils.runSequilizeCmd(args)(args).then(()=>{
+				CommonUtils.runSequilizeCmd(args).then(()=>{
 					logger.debug(`sqlite seeders applied successfully...`);
 					resolve();
 				}).catch(reject);
