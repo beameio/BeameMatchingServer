@@ -3,7 +3,6 @@
  */
 "use strict";
 const path     = require('path');
-const execFile = require('child_process').execFile;
 
 const defaults      = require('../defaults');
 const SqliteProps   = defaults.ConfigProps.Sqlite;
@@ -46,7 +45,6 @@ class Bootstrapper {
 	constructor() {
 		let config            = DirectoryServices.readJSON(AppConfigJsonPath);
 		this._config          = CommonUtils.isObjectEmpty(config) ? null : config;
-		this._sequilizeBinary = CommonUtils.getSequelizeBinaryPath();
 	}
 
 	/**
@@ -404,52 +402,35 @@ class Bootstrapper {
 	//endregion
 
 	//region init sqlite db
-
+	
 	_migrateSqliteSchema() {
-
+		
 		logger.debug(`migrating sqlite schema...`);
-
+		
 		return new Promise((resolve, reject) => {
 				//TODO implement https://github.com/sequelize/umzug
 				let args = ["db:migrate", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
-
-				try {
-					execFile(this._sequilizeBinary, args, (error) => {
-						if (error) {
-							reject(error);
-							return;
-						}
-						logger.debug(`sqlite migration completed successfully...`);
-						resolve();
-					});
-				}
-				catch (e) {
-					reject(e);
-				}
+				
+				CommonUtils.runSequilizeCmd(args).then(()=>{
+					logger.debug(`sqlite migration completed successfully...`);
+					resolve();
+				}).catch(reject);
+				
 			}
 		);
 	}
-
+	
 	_runSqliteSeeders() {
-
+		
 		logger.debug(`running sqlite seeders...`);
-
+		
 		return new Promise((resolve, reject) => {
 				let args = ["db:seed:all", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
-
-				try {
-					execFile(this._sequilizeBinary, args, (error) => {
-						if (error) {
-							reject(error);
-							return;
-						}
-						logger.debug(`sqlite seeders applied successfully...`);
-						resolve();
-					});
-				}
-				catch (e) {
-					reject(e);
-				}
+				
+				CommonUtils.runSequilizeCmd(args).then(()=>{
+					logger.debug(`sqlite seeders applied successfully...`);
+					resolve();
+				}).catch(reject);
 			}
 		);
 	}
