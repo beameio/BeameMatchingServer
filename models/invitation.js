@@ -4,48 +4,60 @@ module.exports = function (sequelize, DataTypes) {
 	const Constants = require('../constants');
 
 	return sequelize.define('Invitation', {
-		id:     {
-			type:          DataTypes.INTEGER,
-			primaryKey:    true,
-			autoIncrement: true
-		},
-		appId:  {
-			type:      DataTypes.STRING,
-			allowNull: false
-		},
-		token:  {
-			type:      DataTypes.STRING,
-			allowNull: false
-		},
-		pin:    {
-			type:         DataTypes.STRING,
-			defaultValue: DataTypes.UUIDV4,
-			unique:       true
+			id:             {
+				type:          DataTypes.INTEGER,
+				primaryKey:    true,
+				autoIncrement: true
+			},
+			appId:          {
+				type:      DataTypes.STRING,
+				allowNull: false
+			},
+			token:          {
+				type:      DataTypes.STRING,
+				allowNull: false
+			},
+			pin:            {
+				type:         DataTypes.STRING,
+				defaultValue: DataTypes.UUIDV4,
+				unique:       true
 
-		},
-		fqdn:   {
-			type:      DataTypes.STRING,
-			unique:    true,
-			allowNull: false
+			},
+			fqdn:           {
+				type:      DataTypes.STRING,
+				unique:    true,
+				allowNull: false
 
+			},
+			name:           {
+				type: DataTypes.STRING,
+				allowNull: true
+			},
+			email:          {
+				type:      DataTypes.STRING,
+				allowNull: true
+			},
+			userId: {
+				type:      DataTypes.STRING,
+				allowNull: true
+			},
+			status:         {
+				type:         DataTypes.STRING,
+				allowNull:    false,
+				defaultValue: Constants.InvitationStatus.Waiting
+			}
 		},
-		status: {
-			type:         DataTypes.STRING,
-			allowNull:    false,
-			defaultValue: Constants.InvitationStatus.Waiting
-		}
-	},
 		{
 			tableName:       'Invitations',
 			freezeTableName: true,
-			indexes:[
+			indexes:         [
 				{
-					name:'indPin',
+					name:   'indPin',
 					unique: true,
 					fields: ['pin']
 				},
 				{
-					name:'indFqdn',
+					name:   'indFqdn',
 					unique: true,
 					fields: ['fqdn']
 				}

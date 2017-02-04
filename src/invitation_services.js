@@ -18,19 +18,44 @@ class InvitationServices {
 
 	}
 
+	getInvitations(appId){
+		return new Promise((resolve, reject) => {
+				dataService.getInvitations(appId).then(data=>{
+					let rows = data.map(row=>{
+						return {
+							id:row.id,
+							name:row.name,
+							email:row.email,
+							fqdn:row.fqdn,
+							status:row.status,
+							createdAt:row.createdAt
+						}
+					});
+
+					resolve(rows);
+				}).catch(reject);
+			}
+		);
+
+	}
+
 	saveInvitation(data) {
 
 		return new Promise((resolve, reject) => {
 
-				//noinspection JSValidateTypes
-				/** @type {Invitation} */
-				let invitation = {
-					token: data.token,
-					appId: data.appId,
-					fqdn:  data.fqdn
-				};
+				// //noinspection JSValidateTypes
+				// /** @type {Invitation} */
+				// let invitation = {
+				// 	token: data.token,
+				// 	appId: data.appId,
+				// 	fqdn:  data.fqdn,
+				// 	name:data.name,
+				// 	email:data.email,
+				// 	userId:data.userId,
+				//
+				// };
 
-				dataService.saveInvitation(invitation).then(record => {
+				dataService.saveInvitation(data).then(record => {
 						resolve({pin:record.pin,id:record.id});
 					}
 				).catch(error => {

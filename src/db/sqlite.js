@@ -59,7 +59,9 @@ class SqliteServices {
 				let model = this._models.invitation;
 
 				//noinspection JSUnresolvedFunction
-				model.findAll({order: 'id DESC'}).then(models => {
+				model.findAll({where:{
+					appId:appId
+				},order: 'id DESC'}).then(models => {
 						let records = models.map(item => {
 							return item.dataValues
 						});

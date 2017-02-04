@@ -31,6 +31,29 @@ class MatchingRouter {
 	}
 
 	_initRoutes() {
+		this._router.get('/v1/invitation/list', (req, res) => {
+
+			this._authServices.getRequestAuthToken(req).then(() => {
+
+				let appId = req.body.appId;
+
+				if(!appId){
+					onRequestError(res,'AppId required',400);
+					return;
+				}
+
+				const invitationServices = InvitationServices.getInstance();
+
+				invitationServices.getInvitations(appId).then(data => {
+					res.json(data);
+				}).catch(error => {
+					onRequestError(res, error, 401);
+				});
+			}).catch(error => {
+				onRequestError(res, error, 401);
+			});
+		});
+
 		this._router.post('/v1/invitation/save', (req, res) => {
 
 			this._authServices.getRequestAuthToken(req).then(() => {
