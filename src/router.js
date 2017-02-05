@@ -24,7 +24,7 @@ function onRequestError(res, error, code) {
 class MatchingRouter {
 	constructor() {
 
-		this._authServices = new(require('./auth_services'))();
+		this._authServices = new (require('./auth_services'))();
 
 		this._router = express.Router();
 
@@ -32,34 +32,25 @@ class MatchingRouter {
 	}
 
 	_initRoutes() {
+		//region invitations
 		this._router.get('/v1/invitation/list', (req, res) => {
 
 			this._authServices.getRequestAuthToken(req).then(() => {
 
 				let appId = req.body.appId;
 
-				if(!appId){
-					onRequestError(res,'AppId required',400);
+				if (!appId) {
+					onRequestError(res, 'AppId required', 400);
 					return;
 				}
 
 				const invitationServices = InvitationServices.getInstance();
 
 				invitationServices.getInvitations(appId).then(data => {
-					res.json(data);
+					res.json({data});
 				}).catch(error => {
 					onRequestError(res, error, 401);
 				});
-			}).catch(error => {
-				onRequestError(res, error, 401);
-			});
-		});
-
-		this._router.post('/v1/relay/get', (req, res) => {
-			this._authServices.getRequestAuthToken(req).then(() => {
-
-				res.json({success: true, relay:Constants.RelayServerFqdn});
-
 			}).catch(error => {
 				onRequestError(res, error, 401);
 			});
@@ -81,6 +72,35 @@ class MatchingRouter {
 			});
 		});
 
+		this._router.post('/v1/invitation/delete/:id', (req, res) => {
+
+			let id = req.params.id;
+
+			const invitationServices = InvitationServices.getInstance();
+
+			const resolve = res => {
+				res.json({success: true})
+			};
+
+			this._authServices.getRequestAuthToken(req)
+				.then(invitationServices.deleteInvitation.bind(null, id))
+				.then(resolve.bind(null, res))
+				.catch(e => {
+					onRequestError(res, e, 500);
+				})
+		});
+		//endregion
+
+		this._router.post('/v1/relay/get', (req, res) => {
+			this._authServices.getRequestAuthToken(req).then(() => {
+
+				res.json({success: true, relay:Constants.RelayServerFqdn});
+
+			}).catch(error => {
+				onRequestError(res, error, 401);
+			});
+		});
+
 		this._router.post('/v1/client/register/:fqdn', (req, res) => {
 
 			let fqdn = req.params.fqdn;
@@ -93,10 +113,10 @@ class MatchingRouter {
 					const socketServer = (require('./socket_server')).getInstance();
 
 					socketServer.addClient(fqdn)
-						.then(()=>{
+						.then(() => {
 							res.status(200).json({success: true});
-						}).catch(error=>{
-							res.status(500).json({success: false, error: BeameLogger.formatError(error)});
+						}).catch(error => {
+						res.status(500).json({success: false, error: BeameLogger.formatError(error)});
 					});
 
 

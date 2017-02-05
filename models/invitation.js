@@ -29,18 +29,6 @@ module.exports = function (sequelize, DataTypes) {
 				allowNull: false
 
 			},
-			name:           {
-				type: DataTypes.STRING,
-				allowNull: true
-			},
-			email:          {
-				type:      DataTypes.STRING,
-				allowNull: true
-			},
-			userId: {
-				type:      DataTypes.STRING,
-				allowNull: true
-			},
 			status:         {
 				type:         DataTypes.STRING,
 				allowNull:    false,
