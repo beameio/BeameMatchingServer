@@ -3,11 +3,11 @@
  */
 
 "use strict";
-const beameSDK     = require('beame-sdk');
-const module_name  = "MatchingRegistrationServices";
-const BeameLogger  = beameSDK.Logger;
-const logger       = new BeameLogger(module_name);
-let dataService    = null;
+const beameSDK    = require('beame-sdk');
+const module_name = "MatchingRegistrationServices";
+const BeameLogger = beameSDK.Logger;
+const logger      = new BeameLogger(module_name);
+let dataService   = null;
 
 let invitationServicesInstance = null;
 
@@ -18,20 +18,43 @@ class InvitationServices {
 
 	}
 
+	getInvitations(appId) {
+
+		return new Promise((resolve, reject) => {
+				dataService.getInvitations(appId).then(rows => {
+					let payload = rows.map(row=>{
+						return{
+							id:row.id,
+							fqdn:row.fqdn,
+							status:row.status,
+							createdAt:row.createdAt
+						}
+					});
+
+					resolve(payload);
+
+				}).catch(reject);
+			}
+		);
+
+
+	}
+
 	saveInvitation(data) {
 
 		return new Promise((resolve, reject) => {
 
-				//noinspection JSValidateTypes
-				/** @type {Invitation} */
-				let invitation = {
-					token: data.token,
-					appId: data.appId,
-					fqdn:  data.fqdn
-				};
+				// //noinspection JSValidateTypes
+				// /** @type {Invitation} */
+				// let invitation = {
+				// 	token: data.token,
+				// 	appId: data.appId,
+				// 	fqdn:  data.fqdn
+				//
+				// };
 
-				dataService.saveInvitation(invitation).then(record => {
-						resolve({pin:record.pin,id:record.id});
+				dataService.saveInvitation(data).then(record => {
+						resolve({pin: record.pin, id: record.id});
 					}
 				).catch(error => {
 					logger.error(BeameLogger.formatError(error));
@@ -41,9 +64,14 @@ class InvitationServices {
 		);
 	}
 
-	findInvitation(pin){
+	deleteInvitation(id){
+		return dataService.deleteInvitation(id);
+	}
+
+
+	findInvitation(pin) {
 		return new Promise((resolve, reject) => {
-				dataService.findInvitation(pin).then(record=>{
+				dataService.findInvitation(pin).then(record => {
 					resolve(record.token);
 				}).catch(reject);
 			}
