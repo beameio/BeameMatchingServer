@@ -5,10 +5,8 @@
 
 
 const express = require('express');
+const beameSDK = require('beame-sdk');
 
-const Constants          = require('../constants');
-
-const beameSDK    = require('beame-sdk');
 const module_name = "MatchingRouter";
 const BeameLogger = beameSDK.Logger;
 const logger      = new BeameLogger(module_name);
@@ -27,6 +25,8 @@ class MatchingRouter {
 		this._authServices = new (require('./auth_services'))();
 
 		this._router = express.Router();
+
+		this._relayFqdn = null;
 
 		this._initRoutes();
 	}
@@ -94,7 +94,20 @@ class MatchingRouter {
 		this._router.get('/v1/relay/get', (req, res) => {
 			this._authServices.getRequestAuthToken(req).then(() => {
 
-				res.json({success: true, relay:Constants.RelayServerFqdn});
+				const _returnRelay = () => {
+					res.json({success: true, relay: this._relayFqdn});
+				};
+
+				if (this._relayFqdn) {
+					_returnRelay();
+					return;
+				}
+
+				this._getBestRelay()
+					.then(_returnRelay)
+					.catch(error => {
+						onRequestError(res, error, 401);
+					})
 
 			}).catch(error => {
 				onRequestError(res, error, 401);
@@ -131,6 +144,24 @@ class MatchingRouter {
 
 	get router() {
 		return this._router;
+	}
+
+	_getBestRelay() {
+		return new Promise((resolve, reject) => {
+
+				const beameUtils = beameSDK.BeameUtils;
+				beameUtils.selectBestProxy(null, 100, 1000, (error, payload) => {
+					if (!error) {
+						this._relayFqdn = payload;
+						resolve();
+					}
+					else {
+						this._relayFqdn = null;
+						reject();
+					}
+				});
+			}
+		);
 	}
 }
 

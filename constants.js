@@ -25,7 +25,6 @@ const CredsFolderPath     = path.join(BeameRootPath, CredsConfigFolder);
 const ClientCredsJsonPath = path.join(BeameRootPath, CredsConfigFolder, ClientCredsFileName);
 
 const MatchingServerFqdn  = 'i5un73q6o42bc8r0.q6ujqecc83gg6fod.v1.d.beameio.net';
-const RelayServerFqdn     = 'arn5e5bh1s9mkqwr.bqnp2d2beqol13qn.v1.d.beameio.net';
 
 
 const WhispererMode = {
@@ -47,7 +46,6 @@ const InvitationStatus = {
 module.exports = {
 	InvitationStatus,
 	MatchingServerFqdn,
-	RelayServerFqdn,
 
 	WhispererMode,
 
