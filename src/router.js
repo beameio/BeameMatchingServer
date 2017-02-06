@@ -91,7 +91,7 @@ class MatchingRouter {
 		});
 		//endregion
 
-		this._router.post('/v1/relay/get', (req, res) => {
+		this._router.get('/v1/relay/get', (req, res) => {
 			this._authServices.getRequestAuthToken(req).then(() => {
 
 				res.json({success: true, relay:Constants.RelayServerFqdn});
