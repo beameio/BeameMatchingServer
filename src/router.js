@@ -152,7 +152,7 @@ class MatchingRouter {
 				const beameUtils = beameSDK.BeameUtils;
 				beameUtils.selectBestProxy(null, 100, 1000, (error, payload) => {
 					if (!error) {
-						this._relayFqdn = payload;
+						this._relayFqdn = payload.endpoint;
 						resolve();
 					}
 					else {
