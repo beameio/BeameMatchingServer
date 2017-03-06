@@ -9,6 +9,7 @@ const module_name  = "SqliteServices";
 const BeameLogger  = beameSDK.Logger;
 const logger       = new BeameLogger(module_name);
 const bootstrapper = new (require('../bootstrapper'))();
+const Constants = require('../../constants');
 
 function onError(reject, error) {
 	logger.error(BeameLogger.formatError(error), error);
@@ -145,11 +146,11 @@ class SqliteServices {
 						}
 					}).then(record => {
 						if (!record) {
-							reject(logger.formatErrorMessage(`Registration record not found`));
+							reject(logger.formatErrorMessage(`Invitation record not found`));
 							return;
 						}
 
-						record.update({completed: true}).then(record => {
+						record.update({status: Constants.InvitationStatus.Completed}).then(record => {
 							resolve(record.dataValues);
 						}).catch(onError.bind(this, reject));
 

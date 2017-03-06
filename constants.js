@@ -39,7 +39,7 @@ const DbProviders = {
 
 const InvitationStatus = {
 	"Waiting":   "Waiting",
-	"Matched":   "Matched",
+	"Canceled":  "Canceled",
 	"Completed": "Completed"
 };
 

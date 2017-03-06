@@ -72,9 +72,9 @@ class MatchingRouter {
 			});
 		});
 
-		this._router.post('/v1/invitation/delete/:id', (req, res) => {
+		this._router.post('/v1/invitation/complete/:fqdn', (req, res) => {
 
-			let id = req.params.id;
+			let fqdn = req.params.fqdn;
 
 			const invitationServices = InvitationServices.getInstance();
 
@@ -83,7 +83,23 @@ class MatchingRouter {
 			};
 
 			this._authServices.getRequestAuthToken(req)
-				.then(invitationServices.deleteInvitation.bind(null, id))
+				.then(invitationServices.markInvitationAsCompleted.bind(null, fqdn))
+				.then(resolve.bind(null, res))
+				.catch(e => {
+					onRequestError(res, e, 500);
+				})
+		});
+
+		this._router.post('/v1/invitation/delete/:id', (req, res) => {
+
+			let id = req.params.id;
+
+			const resolve = res => {
+				res.json({success: true})
+			};
+
+			this._authServices.getRequestAuthToken(req)
+				.then(InvitationServices.deleteInvitation.bind(null, id))
 				.then(resolve.bind(null, res))
 				.catch(e => {
 					onRequestError(res, e, 500);
