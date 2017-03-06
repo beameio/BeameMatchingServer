@@ -76,14 +76,12 @@ class MatchingRouter {
 
 			let fqdn = req.params.fqdn;
 
-			const invitationServices = InvitationServices.getInstance();
-
 			const resolve = res => {
 				res.json({success: true})
 			};
 
 			this._authServices.getRequestAuthToken(req)
-				.then(invitationServices.markInvitationAsCompleted.bind(null, fqdn))
+				.then(InvitationServices.markInvitationAsCompleted(fqdn))
 				.then(resolve.bind(null, res))
 				.catch(e => {
 					onRequestError(res, e, 500);
@@ -99,7 +97,7 @@ class MatchingRouter {
 			};
 
 			this._authServices.getRequestAuthToken(req)
-				.then(InvitationServices.deleteInvitation.bind(null, id))
+				.then(InvitationServices.deleteInvitation(id))
 				.then(resolve.bind(null, res))
 				.catch(e => {
 					onRequestError(res, e, 500);
