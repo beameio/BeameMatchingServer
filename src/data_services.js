@@ -75,11 +75,10 @@ class DataServices {
 	}
 
 	/**
-	 * @param id
-	 * @param {SignatureToken|String} sign
+	 * @param {String} fqdn
 	 */
-	updateInvitationStatus(id, sign) {
-		return this._dbService.updateInvitationRegistrationStatus(id, sign);
+	markInvitationAsCompleted(fqdn) {
+		return this._dbService.markInvitationAsCompleted(fqdn);
 	}
 
 	//endregion

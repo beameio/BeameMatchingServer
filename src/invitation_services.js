@@ -44,15 +44,6 @@ class InvitationServices {
 
 		return new Promise((resolve, reject) => {
 
-				// //noinspection JSValidateTypes
-				// /** @type {Invitation} */
-				// let invitation = {
-				// 	token: data.token,
-				// 	appId: data.appId,
-				// 	fqdn:  data.fqdn
-				//
-				// };
-
 				dataService.saveInvitation(data).then(record => {
 						resolve({pin: record.pin, id: record.id});
 					}
@@ -64,10 +55,13 @@ class InvitationServices {
 		);
 	}
 
-	deleteInvitation(id){
+	static deleteInvitation(id){
 		return dataService.deleteInvitation(id);
 	}
 
+	static markInvitationAsCompleted(fqdn){
+		return dataService.markInvitationAsCompleted(fqdn);
+	}
 
 	findInvitation(pin) {
 		return new Promise((resolve, reject) => {
