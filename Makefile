@@ -18,6 +18,7 @@ build-remote:
 
 .PHONY: build
 build:
+	-rm -r node_modules
 	$(CHRONIC) npm install
 	#$(CHRONIC) npm shrinkwrap
 	mkdir -p build

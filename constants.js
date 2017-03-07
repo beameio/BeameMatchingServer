@@ -24,7 +24,7 @@ const AppConfigJsonPath    = path.join(BeameRootPath, ConfigFolder, AppConfigFil
 const CredsFolderPath     = path.join(BeameRootPath, CredsConfigFolder);
 const ClientCredsJsonPath = path.join(BeameRootPath, CredsConfigFolder, ClientCredsFileName);
 
-const MatchingServerFqdn  = 'i5un73q6o42bc8r0.q6ujqecc83gg6fod.v1.d.beameio.net';
+const MatchingServerFqdn  = 'gpqhiai526aemun8.ohkv8odznwh5jpwm.v1.p.beameio.net';
 
 
 const WhispererMode = {
