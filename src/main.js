@@ -17,16 +17,18 @@ function startDataService() {
 
 }
 
-
 bootstrapper.initAll()
 	.then(startDataService)
 	.then(()=>{
-	let server = new MatchingServer();
-	server.start(()=>{
-		console.log(`Matching started`)
-	},false);
-}).catch(error=>{
+		let server = new MatchingServer();
+		server.start(error =>{
+			if(error){
+				console.error(`Matching server error`,error);
+				process.exit(1);
+			}
+			console.log(`Matching started`)
+		},false);
+	}).catch(error=>{
 	console.error(error);
 	process.exit(1);
 });
-
