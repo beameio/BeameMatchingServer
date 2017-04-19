@@ -72,7 +72,7 @@ class Bootstrapper {
 					.then(this._ensureClientServersJson.bind(this))
 					.then(this._ensureDbConfig.bind(this))
 					.then(() => {
-						logger.info(`Beame-insta-server config files ensured`);
+						logger.info(`Beame Matching server config files ensured`);
 						resolve();
 						if (exit) {
 							process.exit(0);
