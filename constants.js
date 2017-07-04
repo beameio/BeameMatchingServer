@@ -14,10 +14,8 @@ const ConfigFolder             = "config";
 const CredsConfigFolder        = "creds";
 
 const AppConfigFileName      = "app_config.json";
-const SqliteDbConfigFileName = "sqlite_config.json";
 const ClientCredsFileName    = "client_creds.json";
 
-const SqliteConfigJsonPath = path.join(BeameRootPath, ConfigFolder, SqliteDbConfigFileName);
 const ConfigFolderPath     = path.join(BeameRootPath, ConfigFolder);
 const AppConfigJsonPath    = path.join(BeameRootPath, ConfigFolder, AppConfigFileName);
 
@@ -33,7 +31,6 @@ const WhispererMode = {
 };
 
 const DbProviders = {
-	"Sqlite":    "sqlite",
 	"Couchbase": "couchbase",
 	"NeDB": "NeDB"
 };
@@ -61,9 +58,7 @@ module.exports = {
 	CredsFolderPath,
 	ClientCredsJsonPath,
 
-	DbProviders,
-	SqliteDbConfigFileName,
-	SqliteConfigJsonPath
+	DbProviders
 };
 
 
