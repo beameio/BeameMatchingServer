@@ -334,6 +334,9 @@ class Bootstrapper {
 					case DbProviders.Sqlite:
 						this._ensureSqliteConfigJson().then(resolve).catch(_onConfigError);
 						return;
+					case DbProviders.NeDB:
+						resolve();
+						return;
 					//TODO implement Couchbase connector
 					// case DbProviders.Couchbase:
 					// 	break;

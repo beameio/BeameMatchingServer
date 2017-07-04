@@ -16,7 +16,7 @@ const sqlite_db_admin_username = "admin";
 const sqlite_env_name          = "production";
 const sqlite_db_storage_root   = path.join(home, ".beame_matching_data");
 
-const nedb_storage_root = path.join(home, process.env.BEAME_DATA_FOLDER || ".beame_data");
+const nedb_storage_root = path.join(home, process.env.BEAME_DATA_FOLDER || ".beame_matching_data");
 
 const SqliteConfigTemplate = {
 	[sqlite_env_name]: {
