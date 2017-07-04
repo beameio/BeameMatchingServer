@@ -8,13 +8,15 @@ const os   = require('os');
 const home = os.homedir();
 
 const Constants   = require('./constants');
-const db_provider = Constants.DbProviders.Sqlite;
+const db_provider = Constants.DbProviders.NeDB;
 
 
 const sqlite_db_name           = "beame_matching.db";
 const sqlite_db_admin_username = "admin";
 const sqlite_env_name          = "production";
 const sqlite_db_storage_root   = path.join(home, ".beame_matching_data");
+
+const nedb_storage_root = path.join(home, process.env.BEAME_DATA_FOLDER || ".beame_data");
 
 const SqliteConfigTemplate = {
 	[sqlite_env_name]: {
@@ -40,6 +42,9 @@ const ConfigProps = {
 		StorageRoot:    "sqlite_db_storage_root",
 		EnvName:        "sqlite_env_name"
 	},
+	NeDB:     {
+		StorageRoot: "nedb_storage_root"
+	},
 	BeameDir: {
 		BeameFolderRootPath: "beame_server_folder_path",
 		BeameFolderName:     "beame_server_folder_name"
@@ -56,6 +61,8 @@ module.exports = {
 	SqliteConfigTemplate,
 
 	db_provider,
+
+	nedb_storage_root,
 
 	sqlite_db_name,
 	sqlite_db_storage_root,

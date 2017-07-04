@@ -2,12 +2,12 @@
  * Created by zenit1 on 28/12/2016.
  */
 "use strict";
-const path     = require('path');
+const path = require('path');
 
-const defaults      = require('../defaults');
-const SqliteProps   = defaults.ConfigProps.Sqlite;
-const SettingsProps = defaults.ConfigProps.Settings;
-
+const defaults          = require('../defaults');
+const SqliteProps       = defaults.ConfigProps.Sqlite;
+const SettingsProps     = defaults.ConfigProps.Settings;
+const NeDBProps         = defaults.ConfigProps.NeDB;
 const Constants         = require('../constants');
 const DbProviders       = Constants.DbProviders;
 const beameSDK          = require('beame-sdk');
@@ -40,8 +40,8 @@ let bootstrapperInstance;
 class Bootstrapper {
 
 	constructor() {
-		let config            = DirectoryServices.readJSON(AppConfigJsonPath);
-		this._config          = CommonUtils.isObjectEmpty(config) ? null : config;
+		let config   = DirectoryServices.readJSON(AppConfigJsonPath);
+		this._config = CommonUtils.isObjectEmpty(config) ? null : config;
 	}
 
 	/**
@@ -106,6 +106,16 @@ class Bootstrapper {
 							//.then(this._runSqliteSeeders.bind(this))
 							.then(() => {
 								logger.info(`Beame-matching-server ${provider} DB updated successfully`);
+								resolve();
+								if (exit) {
+									process.exit(0);
+								}
+							}).catch(_onConfigError);
+						return;
+					case DbProviders.NeDB:
+						this._ensureNedbDir()
+							.then(() => {
+								logger.info(`Beame-gatekeeper ${provider} DB updated successfully`);
 								resolve();
 								if (exit) {
 									process.exit(0);
@@ -408,7 +418,7 @@ class Bootstrapper {
 				//TODO implement https://github.com/sequelize/umzug
 				let args = ["db:migrate", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
 
-				CommonUtils.runSequilizeCmd(require.resolve('sequelize'), args, path.dirname(__dirname)).then(()=>{
+				CommonUtils.runSequilizeCmd(require.resolve('sequelize'), args, path.dirname(__dirname)).then(() => {
 					logger.debug(`sqlite migration completed successfully...`);
 					resolve();
 				}).catch(reject);
@@ -425,7 +435,7 @@ class Bootstrapper {
 		return new Promise((resolve, reject) => {
 				let args = ["db:seed:all", "--env", this._config[SqliteProps.EnvName], "--config", SqliteConfigJsonPath];
 
-				CommonUtils.runSequilizeCmd(require.resolve('sequelize'), args, path.dirname(__dirname)).then(()=>{
+				CommonUtils.runSequilizeCmd(require.resolve('sequelize'), args, path.dirname(__dirname)).then(() => {
 					logger.debug(`sqlite seeders applied successfully...`);
 					resolve();
 				}).catch(reject);
@@ -440,6 +450,12 @@ class Bootstrapper {
 
 	//endregion
 
+	//region nedb
+	_ensureNedbDir() {
+
+		return this._ensureConfigDir(NeDBProps.StorageRoot);
+	}
+	//endregion
 	//endregion
 
 	//region Beame folder
@@ -508,15 +524,12 @@ class Bootstrapper {
 		return config[env];
 	}
 
+	static get neDbRootPath() {
+		return defaults.nedb_storage_root;
+	}
 	//noinspection JSUnusedGlobalSymbols
 	get appConfig() {
 		return this._config;
-	}
-
-	//noinspection JSMethodCanBeStati
-
-	set setAppConfig(config) {
-		this._config = config;
 	}
 
 	//endregion

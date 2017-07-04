@@ -34,7 +34,8 @@ const WhispererMode = {
 
 const DbProviders = {
 	"Sqlite":    "sqlite",
-	"Couchbase": "couchbase"
+	"Couchbase": "couchbase",
+	"NeDB": "NeDB"
 };
 
 const InvitationStatus = {
