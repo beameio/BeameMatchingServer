@@ -1,6 +1,6 @@
 {
   "name": "BeameMatchingServer",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "Beame Matching Server",
   "private": true,
   "main": "index.js",
