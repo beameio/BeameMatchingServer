@@ -37,9 +37,6 @@ class DataServices {
 		}
 
 		switch (this._dbProvider) {
-			case DbProviders.Sqlite:
-				this._dbService = new (require('./db/sqlite'))(this._options);
-				break;
 			case DbProviders.NeDB:
 				this._dbService = new (require('./db/nedb'))(Bootstrapper.neDbRootPath, this._options);
 				break;
@@ -61,7 +58,7 @@ class DataServices {
 
 	/**
 	 *
-	 * @param {Invitation} data
+	 * @param {Object} data
 	 * @returns {Promise}
 	 */
 	saveInvitation(data) {
