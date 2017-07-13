@@ -90,14 +90,23 @@ class MatchingRouter {
 
 		this._router.post('/v1/invitation/delete/:id', (req, res) => {
 
-			let id = req.params.id;
+			let id = req.params.id,
+				inviteId;
+
+			try {
+				inviteId = parseInt(id);
+			} catch (e) {
+				return onRequestError(res,{message:"invalid invitationId"},500);
+			}
+
+
 
 			const resolve = res => {
 				res.json({success: true})
 			};
 
 			this._authServices.getRequestAuthToken(req)
-				.then(InvitationServices.deleteInvitation(id))
+				.then(InvitationServices.deleteInvitation(inviteId))
 				.then(resolve.bind(null, res))
 				.catch(e => {
 					onRequestError(res, e, 500);
