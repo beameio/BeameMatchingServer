@@ -34,6 +34,7 @@ class NeDB {
 		this._options        = options;
 	}
 
+	// noinspection JSUnusedGlobalSymbols
 	start() {
 		return new Promise((resolve, reject) => {
 				this._loadCollections()
@@ -238,6 +239,9 @@ class NeDB {
 						reject(err || `Unexpected error`)
 					} else {
 						logger.info(`${numRemoved} records removed from ${collection}`);
+						if(numRemoved === 0){
+							logger.info(`No records was removed for query ${query}`)
+						}
 						this._db[collection].persistence.compactDatafile();
 						resolve()
 					}
