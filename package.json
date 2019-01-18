@@ -1,6 +1,6 @@
 {
   "name": "BeameMatchingServer",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "Beame Matching Server",
   "private": true,
   "main": "index.js",
@@ -14,17 +14,17 @@
   "author": "beame.io",
   "license": "ISC",
   "dependencies": {
-    "beame-sdk": "2.0.56",
-    "async": "^2.5.0",
-    "body-parser": "^1.15.2",
-    "express": "^4.14.0",
+    "async": "^2.6.1",
+    "beame-sdk": "git+https://github.com/beameio/beame-sdk.git#dev",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
     "fifo": "^2.3.0",
     "nedb": "^1.8.0",
-    "socket.io": "1.7.3",
-    "underscore": "^1.8.3",
-    "uuid": "^3.1.0"
+    "socket.io": "^2.2.0",
+    "underscore": "^1.9.1",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "socket.io-client": "1.7.3"
+    "socket.io-client": "^2.2.0"
   }
 }
