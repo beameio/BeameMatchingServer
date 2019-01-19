@@ -22,11 +22,16 @@ const AppConfigJsonPath    = path.join(BeameRootPath, ConfigFolder, AppConfigFil
 const CredsFolderPath     = path.join(BeameRootPath, CredsConfigFolder);
 const ClientCredsJsonPath = path.join(BeameRootPath, CredsConfigFolder, ClientCredsFileName);
 
-const defaultMatchingServer = {
-	prod: 'gpqhiai526aemun8.ohkv8odznwh5jpwm.v1.p.beameio.net',
-	dev: 'i5un73q6o42bc8r0.q6ujqecc83gg6fod.v1.d.beameio.net'
+const environments = {
+	prod: {
+		MatchingServerFqdn: "gpqhiai526aemun8.ohkv8odznwh5jpwm.v1.p.beameio.net",
+	},
+
+	dev: {
+		MatchingServerFqdn: "i5un73q6o42bc8r0.q6ujqecc83gg6fod.v1.d.beameio.net",
+	}
 };
-const MatchingServerFqdn  = process.env.BEAME_MATCHING_SERVER_FQDN || (process.env.BEAME_ENV && defaultMatchingServer[process.env.BEAME_ENV.toLowerCase()]) || defaultMatchingServer.prod;
+const environment = require('beame-sdk').makeEnv(environments);
 
 const WhispererMode = {
 	"SESSION":   "Session",
@@ -46,7 +51,7 @@ const InvitationStatus = {
 
 module.exports = {
 	InvitationStatus,
-	MatchingServerFqdn,
+	MatchingServerFqdn: environment.MatchingServerFqdn,
 
 	WhispererMode,
 
