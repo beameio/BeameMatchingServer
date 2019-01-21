@@ -43,7 +43,7 @@
       "integrity": "sha1-R2iMuZu2gE8OBtPnY7HDLlfY5rY="
     },
     "beame-sdk": {
-      "version": "git+https://github.com/beameio/beame-sdk.git#c23f74826206fa22e8278147e6e59e4ec899d286",
+      "version": "git+https://github.com/beameio/beame-sdk.git#dc782dd91cc5ae26953ab139411d445774df42e0",
       "from": "git+https://github.com/beameio/beame-sdk.git#dev",
       "requires": {
         "async": "^2.0.0-rc.6",
