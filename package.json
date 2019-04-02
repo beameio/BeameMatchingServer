@@ -1,6 +1,6 @@
 {
   "name": "BeameMatchingServer",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "Beame Matching Server",
   "private": true,
   "main": "index.js",
@@ -15,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.2",
-    "beame-sdk": "^2.1.0",
+    "beame-sdk": "^2.1.1",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "fifo": "^2.3.0",
