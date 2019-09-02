@@ -21,9 +21,9 @@
       }
     },
     "@types/node": {
-      "version": "10.14.16",
-      "resolved": "https://registry.npmjs.org/@types/node/-/node-10.14.16.tgz",
-      "integrity": "sha512-/opXIbfn0P+VLt+N8DE4l8Mn8rbhiJgabU96ZJ0p9mxOkIks5gh6RUnpHak7Yh0SFkyjO/ODbxsQQPV2bpMmyA=="
+      "version": "10.14.17",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-10.14.17.tgz",
+      "integrity": "sha512-p/sGgiPaathCfOtqu2fx5Mu1bcjuP8ALFg4xpGgNkcin7LwRyzUKniEHBKdcE1RPsenq5JVPIpMTJSygLboygQ=="
     },
     "@types/qs": {
       "version": "6.5.3",
@@ -199,7 +199,7 @@
       }
     },
     "beame-sdk": {
-      "version": "git+https://github.com/beameio/beame-sdk.git#568e0803f10915ecc93597425e10356ae6570b64",
+      "version": "git+https://github.com/beameio/beame-sdk.git#441208d52dd0f0142335cb2f053361ae2d91da43",
       "from": "git+https://github.com/beameio/beame-sdk.git#dev",
       "requires": {
         "async": "^2.6.2",
@@ -2098,9 +2098,9 @@
       },
       "dependencies": {
         "@types/node": {
-          "version": "8.10.52",
-          "resolved": "https://registry.npmjs.org/@types/node/-/node-8.10.52.tgz",
-          "integrity": "sha512-2RbW7WXeLex6RI+kQSxq6Ym0GiVcODeQ4Km7MnnTX5BHdOGQnqVa+s6AUmAW+OFYAJ8wv9QxvNZXm7/kBdGTVw=="
+          "version": "8.10.53",
+          "resolved": "https://registry.npmjs.org/@types/node/-/node-8.10.53.tgz",
+          "integrity": "sha512-aOmXdv1a1/vYUn1OT1CED8ftbkmmYbKhKGSyMDeJiidLvKRKvZUQOdXwG/wcNY7T1Qb0XTlVdiYjIq00U7pLrQ=="
         }
       }
     },
