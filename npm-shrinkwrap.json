@@ -199,7 +199,7 @@
       }
     },
     "beame-sdk": {
-      "version": "git+https://github.com/beameio/beame-sdk.git#cc5ec5c88ae69b03555203641ab6b77c6318458b",
+      "version": "git+https://github.com/beameio/beame-sdk.git#5e239f7aa5446c40f08536940ea6db8378e76888",
       "from": "git+https://github.com/beameio/beame-sdk.git#dev",
       "requires": {
         "async": "^2.6.2",
