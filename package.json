@@ -15,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.2",
-    "beame-sdk": "git+https://github.com/beameio/beame-sdk.git#dev",
+    "beame-sdk": "^2.2.0",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "fifo": "^2.3.0",
