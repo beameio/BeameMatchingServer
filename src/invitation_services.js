@@ -11,6 +11,8 @@ let dataService   = null;
 
 let invitationServicesInstance = null;
 
+class InvitationNotFound extends Error {}
+
 class InvitationServices {
 	constructor() {
 
@@ -63,13 +65,12 @@ class InvitationServices {
 		return dataService.markInvitationAsCompleted(fqdn);
 	}
 
-	findInvitation(pin) {
-		return new Promise((resolve, reject) => {
-				dataService.findInvitation(pin).then(record => {
-					resolve(record.token);
-				}).catch(reject);
-			}
-		);
+	async findInvitation(pin) {
+		const record = await dataService.findInvitation(pin);
+		if (!record) {
+			throw new InvitationNotFound(`Invitation for PIN ${pin} found.`)
+		}
+		return record.token;
 	}
 
 	static getInstance() {
@@ -79,6 +80,9 @@ class InvitationServices {
 
 		return invitationServicesInstance;
 	}
+
 }
+
+InvitationServices.InvitationNotFound = InvitationNotFound;
 
 module.exports = InvitationServices;

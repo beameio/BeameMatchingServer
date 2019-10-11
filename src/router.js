@@ -56,6 +56,7 @@ class MatchingRouter {
 			});
 		});
 
+		// Used by Gatekeeper for new invitations / registrations
 		this._router.post('/v1/invitation/save', (req, res) => {
 
 			this._authServices.getRequestAuthToken(req).then(() => {
@@ -98,7 +99,6 @@ class MatchingRouter {
 			} catch (e) {
 				return onRequestError(res,{message:"invalid invitationId"},500);
 			}
-
 
 
 			const resolve = res => {
@@ -162,6 +162,22 @@ class MatchingRouter {
 			}).catch(error => {
 				onRequestError(res, error, 401);
 			});
+		});
+
+		this._router.get('/v1/matching-access-info-pin/:pin', async (req, res, next) => {
+			try {
+				const data = await InvitationServices.getInstance().findInvitation(req.params.pin);
+				await res.send({'X-BeameAuthToken': data});
+			} catch(e) {
+				if(e instanceof InvitationServices.InvitationNotFound) {
+					const msg = `Matching Access Info PIN not found: ${req.params.pin}`;
+					console.warn(`[/v1/matching-access-info-pin/:pin] ${msg}`);
+					await res.status(404).send(msg);
+					return;
+				}
+				console.error('[/v1/matching-access-info-pin/:pin] error', e);
+				await next(e);
+			}
 		});
 	}
 

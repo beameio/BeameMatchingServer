@@ -3,9 +3,7 @@
  */
 "use strict";
 
-const fs                   = require("fs");
 const bodyParser           = require('body-parser');
-const https                = require('https');
 const Constants            = require('../constants');
 const express              = require('express');
 const Router               = require('./router');
@@ -65,12 +63,6 @@ class MatchingServer {
 	start(cb = nop, boot = true) {
 
 
-		function startDataService() {
-			let dataService = require('../src/data_services').getInstance();
-			return dataService.start();
-
-		}
-
 		const init = () => {
 			return new Promise((resolve, reject) => {
 					if (!boot) {
@@ -82,7 +74,7 @@ class MatchingServer {
 					const bootstrapper = Bootstrapper.getInstance();
 
 					bootstrapper.initAll()
-								.then(startDataService)
+								.then(() => require('../src/data_services').getInstance().start())
 								.then(resolve)
 								.catch(reject);
 				}
