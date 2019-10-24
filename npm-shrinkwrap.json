@@ -57,8 +57,9 @@
       "integrity": "sha512-lGe34o6EHj9y3Kts9R4ZYs/Gr+6N7MCaMlIFA3F1R2O5/m7K06AxfSeO5530PEERE6/WyEg3lsuyw4GHlPZHog=="
     },
     "beame-sdk": {
-      "version": "git+https://github.com/beameio/beame-sdk.git#46a5592f852463649eb05ed56ca3e20fbac4b5b6",
-      "from": "git+https://github.com/beameio/beame-sdk.git#dev",
+      "version": "2.2.4",
+      "resolved": "https://registry.npmjs.org/beame-sdk/-/beame-sdk-2.2.4.tgz",
+      "integrity": "sha512-e3mdxYeEyzn8fCP0YD3qqn2sAa4gewSSw8a0t3tXp4f6Ovx+evbEJEgZXL92ipczn5XE4wpqORRiAJeyAgiWlQ==",
       "requires": {
         "async": "^2.6.3",
         "change-case": "^3.1.0",
