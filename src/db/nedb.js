@@ -5,7 +5,6 @@
 
 
 const Datastore   = require('nedb');
-const async       = require('async');
 const path        = require('path');
 const beameSDK    = require('beame-sdk');
 const module_name = "NeDBServices";
@@ -65,28 +64,8 @@ class NeDB {
 
 	//region collections
 	_loadCollections() {
-		return new Promise((resolve, reject) => {
-
-				async.parallel([
-					cb => {
-						this._loadCollection(Collections.invitations.name, Collections.invitations.indices)
-							.then(() => {
-								cb(null);
-							})
-							.catch(err => {
-								cb(err);
-							})
-					}
-				], err => {
-					if (err) {
-						reject(err)
-					} else {
-						logger.info(`All collections loaded`);
-						resolve()
-					}
-				});
-			}
-		);
+		return this._loadCollection(Collections.invitations.name, Collections.invitations.indices)
+					.then(() => { logger.info(`Collection was loaded`); })
 	}
 
 	_addIndex(name, index) {
