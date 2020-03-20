@@ -246,7 +246,7 @@ class NeDB {
 	 * @returns {Promise.<Invitation>}
 	 */
 	saveInvitation(data) {
-		const uuidv4 = require('uuid/v4');
+		const { v4: uuidv4 } = require('uuid');
 		data.pin = uuidv4();
 		data.status = Constants.InvitationStatus.Waiting;
 		return this._insertDoc(Collections.invitations.name, data);
