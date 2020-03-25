@@ -1,29 +1,30 @@
 {
-  "name": "BeameMatchingServer",
-  "version": "1.0.40",
-  "description": "Beame Matching Server",
-  "private": true,
-  "main": "index.js",
-  "scripts": {
-    "start": "node ./src/main.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:beameio/BeameMatchingServer.git"
-  },
-  "author": "beame.io",
-  "license": "ISC",
-  "dependencies": {
-    "beame-sdk": "git+https://github.com/beameio/beame-sdk.git#dev",
-    "body-parser": "^1.19.0",
-    "express": "^4.17.1",
-    "fifo": "^2.3.0",
-    "nedb": "^1.8.0",
-    "socket.io": "^2.3.0",
-    "underscore": "^1.9.2",
-    "uuid": "^7.0.2"
-  },
-  "devDependencies": {
-    "socket.io-client": "^2.3.0"
-  }
+	"author": "beame.io",
+	"dependencies": {
+		"beame-sdk": "git+https://github.com/beameio/beame-sdk.git#dev",
+		"body-parser": "^1.19.0",
+		"express": "^4.17.1",
+		"fifo": "^2.3.0",
+		"nedb": "^1.8.0",
+		"socket.io": "^2.3.0",
+		"underscore": "^1.9.2",
+		"uuid": "^7.0.2"
+	},
+	"description": "Beame Matching Server",
+	"devDependencies": {
+		"socket.io-client": "^2.3.0"
+	},
+	"license": "ISC",
+	"main": "index.js",
+	"name": "BeameMatchingServer",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:beameio/BeameMatchingServer.git"
+	},
+	"scripts": {
+		"start": "node ./src/main.js",
+		"clean": "rm -rf build ; rm -rf node_modules"
+	},
+	"version": "1.0.40"
 }

@@ -3,10 +3,11 @@ on: [push]
 
 jobs:
   build:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ '12', '10', '8' ]
+        node: [ '12', '10', '8.17.x' ]
     name: Node ${{ matrix.node }} build
     steps:
       - uses: actions/checkout@v1
@@ -15,3 +16,32 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm install
+  archive:
+    timeout-minutes: 10
+    name: Archive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Build Artifact
+        env:
+          BUILD_NUMBER: ${GITHUB_RUN_NUMBER}
+          GIT_COMMIT: ${GITHUB_SHA}
+          GIT_REPO: ${{github.event.repository.name}}
+          JOB_NAME: ${GITHUB_RUN_ID}
+        run: |
+          export GIT_BRANCH="${GITHUB_REF##*/}"
+          echo + Making artifact of repo ${GIT_REPO}, branch ${GIT_BRANCH} with build_number ${BUILD_NUMBER} and commit ${GIT_COMMIT}
+          make artifact
+      - name: Setup AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - name: Deploy to S3
+        run: |
+          aws --version
+          aws s3 cp build/*.tar.gz "s3://beame-build-products/${{github.event.repository.name}}/${GITHUB_REF##*/}/${GITHUB_RUN_NUMBER}/" --metadata 'git_branch'="${GITHUB_REF##*/}",'build_number'="${GITHUB_RUN_NUMBER}",'git_revision'="${GITHUB_SHA}"
