@@ -17,6 +17,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm install
   archive:
+    needs: build
     timeout-minutes: 10
     name: Archive
     runs-on: ubuntu-latest
